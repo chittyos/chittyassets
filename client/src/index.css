@@ -1,0 +1,309 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(46, 100%, 54%);
+  --primary-foreground: hsl(210, 17%, 8%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(46, 100%, 54%);
+  --radius: 0.5rem;
+
+  /* ChittyAssets Custom Variables */
+  --chitty-gold: hsl(46, 100%, 54%);
+  --chitty-platinum: hsl(0, 0%, 90%);
+  --chitty-dark: hsl(222, 84%, 5%);
+  --chitty-charcoal: hsl(0, 0%, 10%);
+}
+
+.dark {
+  --background: hsl(222, 84%, 5%);
+  --foreground: hsl(0, 0%, 90%);
+  --muted: hsl(217, 32%, 17%);
+  --muted-foreground: hsl(215, 20%, 65%);
+  --popover: hsl(222, 84%, 5%);
+  --popover-foreground: hsl(0, 0%, 90%);
+  --card: hsl(222, 84%, 5%);
+  --card-foreground: hsl(0, 0%, 90%);
+  --border: hsl(217, 32%, 17%);
+  --input: hsl(217, 32%, 17%);
+  --primary: hsl(46, 100%, 54%);
+  --primary-foreground: hsl(210, 17%, 8%);
+  --secondary: hsl(217, 32%, 17%);
+  --secondary-foreground: hsl(0, 0%, 90%);
+  --accent: hsl(217, 32%, 17%);
+  --accent-foreground: hsl(0, 0%, 90%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 90%);
+  --ring: hsl(46, 100%, 54%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-chitty-dark text-chitty-platinum;
+  }
+
+  /* ChittyAssets Custom Classes */
+  .bg-chitty-dark {
+    background-color: var(--chitty-dark);
+  }
+
+  .bg-chitty-charcoal {
+    background-color: var(--chitty-charcoal);
+  }
+
+  .bg-chitty-gold {
+    background-color: var(--chitty-gold);
+  }
+
+  .bg-chitty-platinum {
+    background-color: var(--chitty-platinum);
+  }
+
+  .text-chitty-dark {
+    color: var(--chitty-dark);
+  }
+
+  .text-chitty-charcoal {
+    color: var(--chitty-charcoal);
+  }
+
+  .text-chitty-gold {
+    color: var(--chitty-gold);
+  }
+
+  .text-chitty-platinum {
+    color: var(--chitty-platinum);
+  }
+
+  .border-chitty-gold {
+    border-color: var(--chitty-gold);
+  }
+
+  .border-chitty-platinum {
+    border-color: var(--chitty-platinum);
+  }
+
+  /* Premium gradient effects */
+  .bg-gradient-chitty {
+    background: linear-gradient(135deg, var(--chitty-dark) 0%, var(--chitty-charcoal) 100%);
+  }
+
+  .bg-gradient-gold {
+    background: linear-gradient(135deg, var(--chitty-gold) 0%, hsl(43, 96%, 56%) 100%);
+  }
+
+  /* Glass morphism effects */
+  .backdrop-blur-chitty {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Animation classes */
+  .animate-pulse-gold {
+    animation: pulse-gold 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--chitty-charcoal);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--chitty-gold);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(46, 100%, 64%);
+  }
+
+  /* Selection styling */
+  ::selection {
+    background-color: var(--chitty-gold);
+    color: var(--chitty-dark);
+  }
+
+  /* Focus styles */
+  .focus-chitty:focus {
+    outline: 2px solid var(--chitty-gold);
+    outline-offset: 2px;
+  }
+
+  /* Enterprise-grade typography */
+  .text-enterprise-heading {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+
+  .text-enterprise-body {
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.6;
+  }
+
+  /* Card hover effects */
+  .card-chitty-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-chitty-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(212, 175, 55, 0.1), 0 10px 10px -5px rgba(212, 175, 55, 0.04);
+  }
+
+  /* Professional loading states */
+  .skeleton-chitty {
+    background: linear-gradient(90deg, var(--chitty-charcoal) 25%, var(--chitty-platinum) 50%, var(--chitty-charcoal) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Legal document styling */
+  .legal-document {
+    background: white;
+    color: black;
+    font-family: 'Times New Roman', serif;
+    line-height: 1.6;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .legal-seal {
+    border: 3px solid var(--chitty-gold);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: var(--chitty-gold);
+    background: white;
+  }
+
+  /* Mobile optimizations */
+  @media (max-width: 768px) {
+    .mobile-chitty-spacing {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    .mobile-chitty-text {
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .text-chitty-platinum {
+      color: white;
+    }
+
+    .border-chitty-gold {
+      border-color: yellow;
+    }
+
+    .bg-chitty-gold {
+      background-color: yellow;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-pulse-gold,
+    .animate-shimmer,
+    .card-chitty-hover {
+      animation: none;
+      transition: none;
+    }
+  }
+}
+
+@keyframes pulse-gold {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Utility classes for opacity variations */
+.text-chitty-platinum\/70 {
+  color: rgba(229, 228, 226, 0.7);
+}
+
+.text-chitty-platinum\/50 {
+  color: rgba(229, 228, 226, 0.5);
+}
+
+.bg-chitty-gold\/20 {
+  background-color: rgba(212, 175, 55, 0.2);
+}
+
+.bg-chitty-charcoal\/80 {
+  background-color: rgba(26, 26, 26, 0.8);
+}
+
+.border-chitty-gold\/20 {
+  border-color: rgba(212, 175, 55, 0.2);
+}
+
+.border-chitty-gold\/40 {
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
