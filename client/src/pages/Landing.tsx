@@ -17,7 +17,7 @@ export default function Landing() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">ChittyAssets</h1>
-                <p className="text-sm text-slate-400">Enterprise Asset Intelligence</p>
+                <p className="text-sm text-slate-400">Powered by ChittyChain</p>
               </div>
             </div>
             <Button 
@@ -34,14 +34,13 @@ export default function Landing() {
         <div className="relative z-10 px-6 py-20">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-5xl md:text-7xl font-bold text-white mb-6">
-              Your Phone is Your
+              Prove Ownership Once
               <span className="block bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent">
-                Asset Fortress
+                Trusted Everywhere
               </span>
             </h2>
             <p className="text-xl text-slate-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Transform any smartphone into a professional-grade asset protection system. 
-              Scan receipts, track warranties, generate legal evidence, and protect everything you own with AI-powered blockchain verification.
+              The universal asset ownership verification system. ChittyAssets transforms your smartphone into a tamper-proof evidence platform, creating immutable ownership records that work across legal systems, insurance claims, and property transactions.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
@@ -163,6 +162,85 @@ export default function Landing() {
                 </p>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* ChittyChain Ecosystem Section */}
+      <section className="px-6 py-20 bg-slate-900/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Part of the ChittyChain Ecosystem
+            </h3>
+            <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+              ChittyAssets integrates seamlessly with the complete ChittyOS platform, creating a unified trust and verification ecosystem.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* ChittyID */}
+            <Card className="bg-slate-800/30 border-slate-700 hover:border-blue-400/50 transition-all duration-300 group">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
+                  <Shield className="h-6 w-6 text-blue-400" />
+                </div>
+                <h4 className="text-lg font-bold text-white mb-2">ChittyID</h4>
+                <p className="text-sm text-slate-400">
+                  Identity verification - proves WHO owns assets
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* ChittyAssets (Current) */}
+            <Card className="bg-gradient-to-br from-yellow-500/20 to-amber-500/20 border-yellow-400 hover:border-yellow-300 transition-all duration-300 group">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-yellow-400/30 rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
+                  <Database className="h-6 w-6 text-yellow-400" />
+                </div>
+                <h4 className="text-lg font-bold text-white mb-2">ChittyAssets</h4>
+                <p className="text-sm text-slate-200">
+                  Asset ownership - proves WHAT they own
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* ChittyTrust */}
+            <Card className="bg-slate-800/30 border-slate-700 hover:border-emerald-400/50 transition-all duration-300 group">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
+                  <Tag className="h-6 w-6 text-emerald-400" />
+                </div>
+                <h4 className="text-lg font-bold text-white mb-2">ChittyTrust</h4>
+                <p className="text-sm text-slate-400">
+                  Trust scoring and reputation management
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* ChittyResolution */}
+            <Card className="bg-slate-800/30 border-slate-700 hover:border-purple-400/50 transition-all duration-300 group">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
+                  <Gavel className="h-6 w-6 text-purple-400" />
+                </div>
+                <h4 className="text-lg font-bold text-white mb-2">ChittyResolution</h4>
+                <p className="text-sm text-slate-400">
+                  Dispute resolution and legal frameworks
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-12 text-center">
+            <div className="inline-block bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+              <p className="text-slate-300 mb-2">
+                <span className="font-semibold text-yellow-400">ChittyChain:</span> Evidence-centric blockchain with 7-day freeze periods and on-chain settlement
+              </p>
+              <p className="text-sm text-slate-400">
+                "Make proof as frictionless as speech" - Chitty Foundation
+              </p>
+            </div>
           </div>
         </div>
       </section>

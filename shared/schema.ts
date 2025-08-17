@@ -51,9 +51,15 @@ export const verificationStatusEnum = pgEnum('verification_status', [
   'pending', 'verified', 'rejected', 'expired'
 ]);
 
-// Assets table - core asset tracking
+export const chittyChainStatusEnum = pgEnum('chitty_chain_status', [
+  'draft', 'frozen', 'minted', 'settled', 'disputed'
+]);
+
+// Assets table - core asset tracking with ChittyChain integration
 export const assets = pgTable("assets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  chittyId: varchar("chitty_id").unique(), // ChittyChain UUID v7 identifier
+  chittyIdV2: varchar("chitty_id_v2").unique(), // Future Mod-97 Base32 identifier (TTTTTTTTT-NN-VVV-SSSS-CC)
   userId: varchar("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
   description: text("description"),
@@ -68,9 +74,17 @@ export const assets = pgTable("assets", {
   manufacturer: varchar("manufacturer"),
   condition: varchar("condition"),
   trustScore: decimal("trust_score", { precision: 3, scale: 1 }).default("0.0"),
+  
+  // ChittyChain blockchain integration
   blockchainHash: varchar("blockchain_hash"),
   blockNumber: varchar("block_number"),
+  ipfsHash: varchar("ipfs_hash"), // IPFS CID for off-chain data
+  freezeTimestamp: timestamp("freeze_timestamp"), // 7-day freeze period start
+  settlementTimestamp: timestamp("settlement_timestamp"), // On-chain settlement completion
+  mintingFee: decimal("minting_fee", { precision: 8, scale: 6 }), // Fee paid in CHITTY tokens
+  
   verificationStatus: verificationStatusEnum("verification_status").default("pending"),
+  chittyChainStatus: chittyChainStatusEnum("chitty_chain_status").default("draft"),
   tags: text("tags").array(),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow(),

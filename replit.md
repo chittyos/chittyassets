@@ -1,10 +1,10 @@
-# ChittyAssets - Enterprise Asset Management Platform
+# ChittyAssets - Universal Asset Ownership Verification System
 
 ## Overview
 
-ChittyAssets is a comprehensive, AI-powered asset management system designed to transform any smartphone into a professional-grade asset protection platform. The application enables users to scan receipts, track warranties, generate legal evidence, and protect assets with AI-powered blockchain verification capabilities.
+ChittyAssets is the asset ownership verification layer of the ChittyChain ecosystem, implementing the "prove ownership once, trusted everywhere" model. As part of the Chitty Foundation's mission to "make proof as frictionless as speech," ChittyAssets transforms smartphones into professional-grade asset protection platforms that integrate seamlessly with ChittyID, ChittyTrust, and ChittyChain.
 
-The system combines mobile-first responsive design with enterprise security features, real-time collaboration capabilities, and intelligent document analysis to provide a complete asset lifecycle management solution.
+The system provides evidence-centric asset management with tamper-proof chain-of-custody, AI-powered document analysis, and blockchain anchoring through ChittyChain's off-chain immutability and on-chain settlement layers. ChittyAssets serves critical use cases including divorce proceedings, insurance claims, legal disputes, and property transactions by providing immutable proof of asset ownership and value.
 
 ## User Preferences
 
@@ -49,15 +49,30 @@ Preferred communication style: Simple, everyday language.
 - **Warranty Management**: Automated warranty tracking with expiration notifications
 - **Insurance Integration**: Policy management with claim tracking capabilities
 
-## External Dependencies
+## ChittyChain Ecosystem Integration
 
-### AI and Machine Learning Services
+### Core ChittyChain Components
+- **ChittyChain Identifier System**: UUID v7 (transitioning to Mod-97 Base32) for deterministic, human-readable asset IDs
+- **Off-Chain Immutability Layer**: 7-day freeze period with PostgreSQL + pgvector and IPFS CID anchoring
+- **On-Chain Settlement**: EVM smart contracts with Chainlink CCIP for final dispute resolution
+- **Trust Graph Integration**: Neo4j-based dynamic reputation and risk scoring with time-decay algorithms
+
+### ChittyOS Ecosystem Synergy
+- **ChittyID**: Identity verification ("WHO owns assets") complements ChittyAssets ownership proof ("WHAT they own")
+- **ChittyTrust**: Trust scoring and reputation management for asset authenticity
+- **ChittyResolution**: Dispute resolution mechanisms for ownership conflicts
+- **ChittyVerify**: Independent validation and audit trails
+
+### External Dependencies
+
+#### AI and Machine Learning Services
 - **OpenAI GPT-4o**: Primary AI service for document analysis, receipt processing, and asset valuation
 - **Computer Vision**: Image analysis for EXIF metadata extraction and content recognition
 
-### Cloud Infrastructure
+#### Cloud Infrastructure
 - **Neon Database**: Serverless PostgreSQL hosting with connection pooling
 - **Google Cloud Storage**: Object storage for asset documents and evidence files
+- **IPFS Network**: Decentralized storage for immutable evidence preservation
 - **Replit Infrastructure**: Development environment with sidecar authentication services
 
 ### File Upload and Processing

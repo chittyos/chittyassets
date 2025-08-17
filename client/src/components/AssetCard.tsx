@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Asset } from "@shared/schema";
+import { ChittyChainStatus } from "./ChittyChainStatus";
 import { Shield, FileText, Box, Clock, TrendingUp } from "lucide-react";
 
 interface AssetCardProps {

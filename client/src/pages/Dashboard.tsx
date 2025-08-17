@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { AssetCard } from "@/components/AssetCard";
 import { TimelineEvent } from "@/components/TimelineEvent";
+import { EcosystemIndicator } from "@/components/EcosystemIndicator";
 import { 
   Shield, 
   Database, 
@@ -125,7 +126,12 @@ export default function Dashboard() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">ChittyAssets</h1>
-                <p className="text-xs text-chitty-platinum/70">Enterprise Asset Intelligence</p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-xs text-chitty-platinum/70">Powered by</p>
+                  <Badge variant="secondary" className="text-xs bg-chitty-gold/20 text-chitty-gold border-chitty-gold/30">
+                    ChittyChain
+                  </Badge>
+                </div>
               </div>
             </div>
 
@@ -142,16 +148,16 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <button className="relative p-2 text-chitty-platinum/70 hover:text-chitty-gold transition-colors">
                 <Bell className="w-5 h-5" />
-                {expiringWarranties && expiringWarranties.length > 0 && (
+                {Array.isArray(expiringWarranties) && expiringWarranties.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                     {expiringWarranties.length}
                   </span>
                 )}
               </button>
               <div className="flex items-center space-x-3 cursor-pointer group" onClick={handleLogout}>
-                {user?.profileImageUrl ? (
+                {(user as any)?.profileImageUrl ? (
                   <img 
-                    src={user.profileImageUrl} 
+                    src={(user as any).profileImageUrl} 
                     alt="Profile" 
                     className="w-10 h-10 rounded-full object-cover border-2 border-chitty-gold/50 group-hover:border-chitty-gold transition-colors"
                   />
@@ -162,9 +168,9 @@ export default function Dashboard() {
                 )}
                 <div className="hidden lg:block">
                   <p className="text-sm font-medium text-white">
-                    {user?.firstName && user?.lastName 
-                      ? `${user.firstName} ${user.lastName}` 
-                      : user?.email?.split('@')[0] || 'User'}
+                    {(user as any)?.firstName && (user as any)?.lastName 
+                      ? `${(user as any).firstName} ${(user as any).lastName}` 
+                      : (user as any)?.email?.split('@')[0] || 'User'}
                   </p>
                   <p className="text-xs text-chitty-platinum/70">Asset Manager</p>
                 </div>
@@ -180,9 +186,16 @@ export default function Dashboard() {
         
         {/* Dashboard Overview Section */}
         <section className="mb-12">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Asset Intelligence Dashboard</h2>
-            <p className="text-chitty-platinum/70">Real-time asset monitoring, AI-powered insights, and legal evidence management</p>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+            <div className="lg:col-span-3">
+              <div className="mb-6">
+                <h2 className="text-3xl font-bold text-white mb-2">Asset Intelligence Dashboard</h2>
+                <p className="text-chitty-platinum/70">Real-time asset monitoring, AI-powered insights, and legal evidence management</p>
+              </div>
+            </div>
+            <div className="lg:col-span-1">
+              <EcosystemIndicator />
+            </div>
           </div>
 
           {/* Key Metrics Cards */}
@@ -197,7 +210,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-3xl font-bold text-white" data-testid="text-total-assets">
-                    {assetStats?.totalAssets || 0}
+                    {(assetStats as any)?.totalAssets || 0}
                   </p>
                   <p className="text-sm text-chitty-platinum/70">Total Assets Tracked</p>
                 </div>
@@ -214,7 +227,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-3xl font-bold text-white" data-testid="text-verified-assets">
-                    {assetStats?.verifiedAssets || 0}
+                    {(assetStats as any)?.verifiedAssets || 0}
                   </p>
                   <p className="text-sm text-chitty-platinum/70">Blockchain Verified</p>
                 </div>
@@ -231,7 +244,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-3xl font-bold text-white" data-testid="text-legal-cases">
-                    {legalCases?.length || 0}
+                    {Array.isArray(legalCases) ? legalCases.length : 0}
                   </p>
                   <p className="text-sm text-chitty-platinum/70">Active Legal Cases</p>
                 </div>
@@ -248,7 +261,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-3xl font-bold text-white" data-testid="text-ai-accuracy">
-                    {assetStats?.averageTrustScore ? `${assetStats.averageTrustScore.toFixed(1)}%` : '0%'}
+                    {(assetStats as any)?.averageTrustScore ? `${(assetStats as any).averageTrustScore.toFixed(1)}%` : '0%'}
                   </p>
                   <p className="text-sm text-chitty-platinum/70">Average Trust Score</p>
                 </div>
@@ -328,7 +341,7 @@ export default function Dashboard() {
                 </Card>
               ))}
             </div>
-          ) : assets && assets.length > 0 ? (
+          ) : Array.isArray(assets) && assets.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {assets.map((asset: any) => (
                 <AssetCard
@@ -362,7 +375,7 @@ export default function Dashboard() {
         </section>
 
         {/* Expiring Warranties Alert */}
-        {expiringWarranties && expiringWarranties.length > 0 && (
+        {Array.isArray(expiringWarranties) && expiringWarranties.length > 0 && (
           <section className="mb-12">
             <Card className="bg-chitty-charcoal/80 border border-orange-500/40">
               <CardHeader>
