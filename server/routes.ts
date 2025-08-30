@@ -6,6 +6,7 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { aiAnalysisService } from "./aiAnalysis";
 import { seedDemoData } from "./seedData";
+import { chittyCloudMcp } from "./chittyCloudMcp";
 import { insertAssetSchema, insertEvidenceSchema, insertTimelineEventSchema, 
          insertWarrantySchema, insertInsurancePolicySchema, insertLegalCaseSchema } from "@shared/schema";
 import { z } from "zod";
@@ -35,6 +36,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error seeding demo data:", error);
       res.status(500).json({ message: "Failed to seed demo data" });
+    }
+  });
+
+  // ChittyCloud MCP integration routes
+  app.get('/api/ecosystem/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const status = await chittyCloudMcp.getEcosystemStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("Error fetching ecosystem status:", error);
+      res.status(500).json({ message: "Failed to fetch ecosystem status" });
+    }
+  });
+
+  app.post('/api/assets/:id/freeze', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const asset = await storage.getAsset(req.params.id, userId);
+      
+      if (!asset) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
+
+      // Freeze asset on ChittyChain
+      const freezeResult = await chittyCloudMcp.freezeAsset(asset.chittyId || asset.id, asset);
+
+      if (!freezeResult.success) {
+        return res.status(500).json({ message: freezeResult.error });
+      }
+
+      // Update asset with freeze data
+      const updatedAsset = await storage.updateAsset(req.params.id, userId, {
+        chittyChainStatus: 'frozen',
+        ipfsHash: freezeResult.ipfsHash,
+        freezeTimestamp: new Date(freezeResult.freezeTimestamp!),
+      });
+
+      // Create timeline event
+      await storage.createTimelineEvent({
+        assetId: asset.id,
+        userId,
+        eventType: 'other',
+        title: 'Asset frozen on ChittyChain',
+        description: '7-day immutability period started',
+        eventDate: new Date(),
+      });
+
+      res.json(updatedAsset);
+    } catch (error) {
+      console.error("Error freezing asset:", error);
+      res.status(500).json({ message: "Failed to freeze asset" });
+    }
+  });
+
+  app.post('/api/assets/:id/mint', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const asset = await storage.getAsset(req.params.id, userId);
+      
+      if (!asset) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
+
+      if (asset.chittyChainStatus !== 'frozen') {
+        return res.status(400).json({ message: "Asset must be frozen before minting" });
+      }
+
+      // Mint evidence token
+      const mintResult = await chittyCloudMcp.mintAssetToken(
+        asset.chittyId || asset.id, 
+        asset.ipfsHash || 'placeholder'
+      );
+
+      if (!mintResult.success) {
+        return res.status(500).json({ message: mintResult.error });
+      }
+
+      // Update asset with mint data
+      const updatedAsset = await storage.updateAsset(req.params.id, userId, {
+        chittyChainStatus: 'minted',
+        blockchainHash: mintResult.transactionHash,
+        mintingFee: '0.1',
+      });
+
+      // Create timeline event
+      await storage.createTimelineEvent({
+        assetId: asset.id,
+        userId,
+        eventType: 'other',
+        title: 'Evidence token minted',
+        description: 'Asset ownership token created on ChittyChain',
+        eventDate: new Date(),
+      });
+
+      res.json(updatedAsset);
+    } catch (error) {
+      console.error("Error minting asset:", error);
+      res.status(500).json({ message: "Failed to mint asset" });
     }
   });
 
@@ -86,7 +185,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/assets', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const assetData = insertAssetSchema.parse({ ...req.body, userId });
+      
+      // Generate ChittyChain identifier via MCP
+      const chittyId = await chittyCloudMcp.generateChittyId();
+      
+      // Calculate trust score using ChittyTrust
+      const trustResult = await chittyCloudMcp.calculateTrustScore(chittyId, req.body);
+      
+      const assetData = insertAssetSchema.parse({ 
+        ...req.body, 
+        userId,
+        chittyId,
+        trustScore: trustResult.trustScore.toString(),
+        chittyChainStatus: 'draft',
+        metadata: {
+          ...req.body.metadata,
+          trustFactors: trustResult.factors,
+          trustConfidence: trustResult.confidence,
+        }
+      });
       
       const asset = await storage.createAsset(assetData);
       
@@ -96,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         eventType: 'acquisition',
         title: `Asset "${asset.name}" added to portfolio`,
-        description: 'Initial asset registration',
+        description: 'Initial asset registration with ChittyChain integration',
         eventDate: new Date(),
       });
       

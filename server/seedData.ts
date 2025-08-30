@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+import { chittyCloudMcp } from "./chittyCloudMcp";
 
 export async function seedDemoData(userId: string) {
   try {
@@ -19,7 +20,7 @@ export async function seedDemoData(userId: string) {
         manufacturer: "Apple",
         condition: "excellent",
         trustScore: "92.5",
-        chittyId: "01920e4b-8f3a-7c2e-9d5f-1a2b3c4d5e6f", // UUID v7 format
+        chittyId: await chittyCloudMcp.generateChittyId(),
         verificationStatus: "verified" as const,
         chittyChainStatus: "minted" as const,
         tags: ["work", "computer", "apple", "high-value"],
@@ -47,7 +48,7 @@ export async function seedDemoData(userId: string) {
         manufacturer: "Tesla",
         condition: "excellent",
         trustScore: "96.8",
-        chittyId: "01920e4c-1f2a-7b3c-8e4f-2a3b4c5d6e7f",
+        chittyId: await chittyCloudMcp.generateChittyId(),
         verificationStatus: "verified" as const,
         chittyChainStatus: "settled" as const,
         tags: ["vehicle", "electric", "tesla", "high-value"],
@@ -72,7 +73,7 @@ export async function seedDemoData(userId: string) {
         manufacturer: "Rolex",
         condition: "mint",
         trustScore: "98.2",
-        chittyId: "01920e4d-2f3a-7c4d-9e5f-3a4b5c6d7e8f",
+        chittyId: await chittyCloudMcp.generateChittyId(),
         verificationStatus: "verified" as const,
         chittyChainStatus: "settled" as const,
         tags: ["luxury", "watch", "rolex", "investment"],
@@ -97,7 +98,7 @@ export async function seedDemoData(userId: string) {
         manufacturer: "Pablo Picasso",
         condition: "excellent",
         trustScore: "94.7",
-        chittyId: "01920e4e-3f4a-7d5e-9f6a-4b5c6d7e8f9a",
+        chittyId: await chittyCloudMcp.generateChittyId(),
         verificationStatus: "verified" as const,
         chittyChainStatus: "frozen" as const,
         freezeTimestamp: new Date(),
@@ -123,7 +124,7 @@ export async function seedDemoData(userId: string) {
         manufacturer: "Custom Build",
         condition: "excellent",
         trustScore: "89.3",
-        chittyId: "01920e4f-4f5a-7e6f-9a7b-5c6d7e8f9a0b",
+        chittyId: await chittyCloudMcp.generateChittyId(),
         verificationStatus: "pending" as const,
         chittyChainStatus: "draft" as const,
         tags: ["real-estate", "commercial", "office", "investment"],
