@@ -5,6 +5,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { aiAnalysisService } from "./aiAnalysis";
+import { seedDemoData } from "./seedData";
 import { insertAssetSchema, insertEvidenceSchema, insertTimelineEventSchema, 
          insertWarrantySchema, insertInsurancePolicySchema, insertLegalCaseSchema } from "@shared/schema";
 import { z } from "zod";
@@ -22,6 +23,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Demo data route
+  app.post('/api/seed-demo', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const assetCount = await seedDemoData(userId);
+      res.json({ message: `Created ${assetCount} demo assets`, assetCount });
+    } catch (error) {
+      console.error("Error seeding demo data:", error);
+      res.status(500).json({ message: "Failed to seed demo data" });
     }
   });
 
@@ -212,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const analysisResult = await storage.createAiAnalysisResult({
         evidenceId: req.params.evidenceId,
         analysisType,
-        confidence,
+        confidence: confidence.toString(),
         results,
         processingTime,
         modelUsed: 'gpt-4o',

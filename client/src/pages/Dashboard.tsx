@@ -366,13 +366,33 @@ export default function Dashboard() {
                     : "Start building your asset portfolio by adding your first asset."
                   }
                 </p>
-                <Button 
-                  className="bg-chitty-gold hover:bg-chitty-gold/90 text-chitty-charcoal font-semibold"
-                  data-testid="button-add-first-asset"
-                >
-                  <Plus className="mr-2 w-4 h-4" />
-                  Add Your First Asset
-                </Button>
+                <div className="flex gap-3">
+                  <Button 
+                    className="bg-chitty-gold hover:bg-chitty-gold/90 text-chitty-charcoal font-semibold"
+                    data-testid="button-add-first-asset"
+                  >
+                    <Plus className="mr-2 w-4 h-4" />
+                    Add Your First Asset
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="border-chitty-gold/30 text-chitty-gold hover:bg-chitty-gold/10"
+                    onClick={async () => {
+                      try {
+                        await apiRequest('POST', '/api/seed-demo');
+                        toast({ title: "Demo data created!", description: "Sample assets have been added to your portfolio" });
+                        queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+                        queryClient.invalidateQueries({ queryKey: ['/api/assets/stats'] });
+                      } catch (error) {
+                        toast({ title: "Error", description: "Failed to create demo data", variant: "destructive" });
+                      }
+                    }}
+                    data-testid="button-seed-demo"
+                  >
+                    <Database className="mr-2 w-4 h-4" />
+                    Load Demo Assets
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
