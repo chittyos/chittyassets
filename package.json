@@ -1,8 +1,26 @@
 {
-  "name": "rest-express",
+  "name": "@chittyos/chittyassets",
   "version": "1.0.0",
+  "description": "Blockchain-integrated asset management system for ChittyOS ecosystem with ownership proof, dashboard filtering, and multi-platform deployment",
   "type": "module",
   "license": "MIT",
+  "author": "ChittyOS Team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chittyos/chittyassets"
+  },
+  "keywords": [
+    "chittyos",
+    "chittyassets",
+    "asset-management",
+    "blockchain",
+    "ownership-proof",
+    "dashboard",
+    "react",
+    "express",
+    "drizzle",
+    "neon"
+  ],
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
