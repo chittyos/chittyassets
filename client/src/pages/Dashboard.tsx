@@ -39,8 +39,8 @@ export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [assetTypeFilter, setAssetTypeFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [assetTypeFilter, setAssetTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -66,7 +66,11 @@ export default function Dashboard() {
 
   // Fetch user assets with filters
   const { data: assets, isLoading: assetsLoading } = useQuery({
-    queryKey: ['/api/assets', { search: searchTerm, type: assetTypeFilter, status: statusFilter }],
+    queryKey: ['/api/assets', { 
+      search: searchTerm, 
+      type: assetTypeFilter === "all" ? "" : assetTypeFilter, 
+      status: statusFilter === "all" ? "" : statusFilter 
+    }],
     enabled: isAuthenticated,
     retry: false,
   });
@@ -303,7 +307,7 @@ export default function Dashboard() {
                 <SelectValue placeholder="Asset Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="real_estate">Real Estate</SelectItem>
                 <SelectItem value="vehicle">Vehicle</SelectItem>
                 <SelectItem value="artwork">Artwork</SelectItem>
@@ -317,7 +321,7 @@ export default function Dashboard() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="disposed">Disposed</SelectItem>
                 <SelectItem value="in_dispute">In Dispute</SelectItem>
@@ -357,7 +361,7 @@ export default function Dashboard() {
                 <Shield className="w-16 h-16 text-chitty-gold/50 mx-auto mb-4" />
                 <h4 className="text-xl font-bold text-white mb-2">No Assets Found</h4>
                 <p className="text-chitty-platinum/70 mb-6">
-                  {searchTerm || assetTypeFilter || statusFilter 
+                  {searchTerm || (assetTypeFilter !== "all") || (statusFilter !== "all")
                     ? "No assets match your current filters. Try adjusting your search criteria."
                     : "Start building your asset portfolio by adding your first asset."
                   }
