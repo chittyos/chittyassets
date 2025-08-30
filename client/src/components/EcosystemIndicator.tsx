@@ -57,23 +57,23 @@ export function EcosystemIndicator({ className = "" }: EcosystemIndicatorProps) 
   const ecosystemServices = [
     {
       name: "ChittyID",
-      status: ecosystemStatus?.chittyId || "online",
-      ...getServiceConfig("ChittyID", ecosystemStatus?.chittyId || "online")
+      status: (ecosystemStatus as any)?.chittyId || "online",
+      ...getServiceConfig("ChittyID", (ecosystemStatus as any)?.chittyId || "online")
     },
     {
       name: "ChittyAssets",
-      status: ecosystemStatus?.chittyAssets || "active",
-      ...getServiceConfig("ChittyAssets", ecosystemStatus?.chittyAssets || "active")
+      status: (ecosystemStatus as any)?.chittyAssets || "active",
+      ...getServiceConfig("ChittyAssets", (ecosystemStatus as any)?.chittyAssets || "active")
     },
     {
       name: "ChittyTrust",
-      status: ecosystemStatus?.chittyTrust || "online",
-      ...getServiceConfig("ChittyTrust", ecosystemStatus?.chittyTrust || "online")
+      status: (ecosystemStatus as any)?.chittyTrust || "online",
+      ...getServiceConfig("ChittyTrust", (ecosystemStatus as any)?.chittyTrust || "online")
     },
     {
       name: "ChittyResolution",
-      status: ecosystemStatus?.chittyResolution || "available",
-      ...getServiceConfig("ChittyResolution", ecosystemStatus?.chittyResolution || "available")
+      status: (ecosystemStatus as any)?.chittyResolution || "available",
+      ...getServiceConfig("ChittyResolution", (ecosystemStatus as any)?.chittyResolution || "available")
     }
   ];
 
