@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { chittyAuth, requireChittyAuth, requireVerifiedChitty } from "./chittyAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { aiAnalysisService } from "./aiAnalysis";
@@ -12,13 +12,13 @@ import { insertAssetSchema, insertEvidenceSchema, insertTimelineEventSchema,
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+  // ChittyAuth middleware
+  await chittyAuth.setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -28,9 +28,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Demo data route
-  app.post('/api/seed-demo', isAuthenticated, async (req: any, res) => {
+  app.post('/api/seed-demo', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const assetCount = await seedDemoData(userId);
       res.json({ message: `Created ${assetCount} demo assets`, assetCount });
     } catch (error) {
@@ -40,7 +40,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ChittyCloud MCP integration routes
-  app.get('/api/ecosystem/status', isAuthenticated, async (req: any, res) => {
+  app.get('/api/ecosystem/status', requireChittyAuth(), async (req: any, res) => {
     try {
       const status = await chittyCloudMcp.getEcosystemStatus();
       res.json(status);
@@ -50,9 +50,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/assets/:id/freeze', isAuthenticated, async (req: any, res) => {
+  app.post('/api/assets/:id/freeze', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const asset = await storage.getAsset(req.params.id, userId);
       
       if (!asset) {
@@ -90,9 +90,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/assets/:id/mint', isAuthenticated, async (req: any, res) => {
+  app.post('/api/assets/:id/mint', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const asset = await storage.getAsset(req.params.id, userId);
       
       if (!asset) {
@@ -138,9 +138,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Asset routes
-  app.get('/api/assets', isAuthenticated, async (req: any, res) => {
+  app.get('/api/assets', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const filters = {
         assetType: req.query.type as string,
         status: req.query.status as string,
@@ -157,9 +157,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/assets/stats', isAuthenticated, async (req: any, res) => {
+  app.get('/api/assets/stats', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const stats = await storage.getAssetStats(userId);
       res.json(stats);
     } catch (error) {
@@ -168,9 +168,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/assets/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/assets/:id', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const asset = await storage.getAsset(req.params.id, userId);
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
@@ -182,9 +182,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/assets', isAuthenticated, async (req: any, res) => {
+  app.post('/api/assets', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       
       // Generate ChittyChain identifier via MCP
       const chittyId = await chittyCloudMcp.generateChittyId();
@@ -227,9 +227,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/assets/:id', isAuthenticated, async (req: any, res) => {
+  app.put('/api/assets/:id', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const updates = req.body;
       delete updates.id;
       delete updates.userId;
@@ -244,9 +244,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/assets/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/assets/:id', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       await storage.deleteAsset(req.params.id, userId);
       res.status(204).send();
     } catch (error) {
@@ -256,9 +256,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Evidence routes
-  app.get('/api/assets/:assetId/evidence', isAuthenticated, async (req: any, res) => {
+  app.get('/api/assets/:assetId/evidence', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const evidence = await storage.getAssetEvidence(req.params.assetId, userId);
       res.json(evidence);
     } catch (error) {
@@ -267,9 +267,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/assets/:assetId/evidence', isAuthenticated, async (req: any, res) => {
+  app.post('/api/assets/:assetId/evidence', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const evidenceData = insertEvidenceSchema.parse({
         ...req.body,
         assetId: req.params.assetId,
@@ -300,9 +300,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Analysis routes
-  app.post('/api/evidence/:evidenceId/analyze', isAuthenticated, async (req: any, res) => {
+  app.post('/api/evidence/:evidenceId/analyze', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const { base64Image, analysisType } = req.body;
       
       if (!base64Image || !analysisType) {
@@ -362,9 +362,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Timeline routes
-  app.get('/api/assets/:assetId/timeline', isAuthenticated, async (req: any, res) => {
+  app.get('/api/assets/:assetId/timeline', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const timeline = await storage.getAssetTimeline(req.params.assetId, userId);
       res.json(timeline);
     } catch (error) {
@@ -374,9 +374,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Warranty routes
-  app.get('/api/assets/:assetId/warranties', isAuthenticated, async (req: any, res) => {
+  app.get('/api/assets/:assetId/warranties', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const warranties = await storage.getAssetWarranties(req.params.assetId, userId);
       res.json(warranties);
     } catch (error) {
@@ -385,9 +385,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/warranties/expiring', isAuthenticated, async (req: any, res) => {
+  app.get('/api/warranties/expiring', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const daysAhead = parseInt(req.query.days as string) || 30;
       const warranties = await storage.getExpiringWarranties(userId, daysAhead);
       res.json(warranties);
@@ -397,9 +397,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/assets/:assetId/warranties', isAuthenticated, async (req: any, res) => {
+  app.post('/api/assets/:assetId/warranties', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const warrantyData = insertWarrantySchema.parse({
         ...req.body,
         assetId: req.params.assetId,
@@ -418,9 +418,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Insurance routes
-  app.get('/api/assets/:assetId/insurance', isAuthenticated, async (req: any, res) => {
+  app.get('/api/assets/:assetId/insurance', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const insurance = await storage.getAssetInsurance(req.params.assetId, userId);
       res.json(insurance);
     } catch (error) {
@@ -429,9 +429,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/assets/:assetId/insurance', isAuthenticated, async (req: any, res) => {
+  app.post('/api/assets/:assetId/insurance', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const insuranceData = insertInsurancePolicySchema.parse({
         ...req.body,
         assetId: req.params.assetId,
@@ -450,9 +450,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Legal case routes
-  app.get('/api/legal-cases', isAuthenticated, async (req: any, res) => {
+  app.get('/api/legal-cases', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const cases = await storage.getUserLegalCases(userId);
       res.json(cases);
     } catch (error) {
@@ -461,9 +461,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/legal-cases', isAuthenticated, async (req: any, res) => {
+  app.post('/api/legal-cases', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const caseData = insertLegalCaseSchema.parse({ ...req.body, userId });
       
       const legalCase = await storage.createLegalCase(caseData);
@@ -478,9 +478,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Legal document generation
-  app.post('/api/legal/generate-document', isAuthenticated, async (req: any, res) => {
+  app.post('/api/legal/generate-document', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const { templateType, assetId, jurisdiction, includeNotarization, includeBlockchain } = req.body;
       
       if (!templateType || !assetId) {
@@ -517,9 +517,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Trust score calculation
-  app.post('/api/assets/:assetId/calculate-trust-score', isAuthenticated, async (req: any, res) => {
+  app.post('/api/assets/:assetId/calculate-trust-score', requireChittyAuth(), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = `chitty_${req.auth.userId}`;
       const asset = await storage.getAsset(req.params.assetId, userId);
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
@@ -539,8 +539,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Object storage routes for evidence files
-  app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
-    const userId = req.user?.claims?.sub;
+  app.get("/objects/:objectPath(*)", requireChittyAuth(), async (req: any, res) => {
+    const userId = req.auth ? `chitty_${req.auth.userId}` : undefined;
     const objectStorageService = new ObjectStorageService();
     try {
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
@@ -562,18 +562,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/objects/upload", isAuthenticated, async (req: any, res) => {
+  app.post("/api/objects/upload", requireChittyAuth(), async (req: any, res) => {
     const objectStorageService = new ObjectStorageService();
     const uploadURL = await objectStorageService.getObjectEntityUploadURL();
     res.json({ uploadURL });
   });
 
-  app.put("/api/evidence-files", isAuthenticated, async (req: any, res) => {
+  app.put("/api/evidence-files", requireChittyAuth(), async (req: any, res) => {
     if (!req.body.fileURL) {
       return res.status(400).json({ error: "fileURL is required" });
     }
 
-    const userId = req.user?.claims?.sub;
+    const userId = req.auth ? `chitty_${req.auth.userId}` : undefined;
 
     try {
       const objectStorageService = new ObjectStorageService();
