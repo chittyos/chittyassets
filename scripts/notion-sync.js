@@ -5,9 +5,13 @@
  * Syncs ChittyAssets data and metadata to Notion Command Center
  */
 
-const { Client } = require('@notionhq/client');
-const fs = require('fs').promises;
-const path = require('path');
+import { Client } from '@notionhq/client';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Initialize Notion client
 const notion = new Client({

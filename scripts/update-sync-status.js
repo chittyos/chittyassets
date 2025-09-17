@@ -5,7 +5,7 @@
  * Updates a status page in Notion with the latest sync results
  */
 
-const { Client } = require('@notionhq/client');
+import { Client } from '@notionhq/client';
 
 // Initialize Notion client
 const notion = new Client({

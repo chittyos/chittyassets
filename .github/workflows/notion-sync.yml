@@ -30,10 +30,21 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm ci --production=false
-          npm install @notionhq/client dotenv
+          npm ci --legacy-peer-deps
+          npm install @notionhq/client dotenv --legacy-peer-deps
+
+      - name: Check for Notion secrets
+        id: check-secrets
+        run: |
+          if [ -z "${{ secrets.NOTION_API_KEY }}" ]; then
+            echo "::warning::NOTION_API_KEY secret not configured. Please add it in repository settings."
+            echo "configured=false" >> $GITHUB_OUTPUT
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Sync to Notion Command Center
+        if: steps.check-secrets.outputs.configured == 'true'
         env:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
@@ -42,8 +53,14 @@ jobs:
         run: |
           node scripts/notion-sync.js
 
+      - name: Skip sync (secrets not configured)
+        if: steps.check-secrets.outputs.configured != 'true'
+        run: |
+          echo "::notice::Notion sync skipped. Configure NOTION_API_KEY and NOTION_DATABASE_ID secrets to enable sync."
+          echo "See .github/NOTION_SETUP.md for setup instructions."
+
       - name: Update sync status
-        if: always()
+        if: always() && steps.check-secrets.outputs.configured == 'true'
         env:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_STATUS_PAGE_ID: ${{ secrets.NOTION_STATUS_PAGE_ID }}
