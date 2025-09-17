@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { chittyAuth, requireChittyAuth, requireVerifiedChitty } from "./chittyAuth";
+import { setupGitHubWebhooks } from "./githubWebhooks";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { aiAnalysisService } from "./aiAnalysis";
@@ -14,6 +15,9 @@ import { z } from "zod";
 export async function registerRoutes(app: Express): Promise<Server> {
   // ChittyAuth middleware
   await chittyAuth.setupAuth(app);
+
+  // GitHub App webhooks
+  setupGitHubWebhooks(app);
 
   // Auth routes
   app.get('/api/auth/user', requireChittyAuth(), async (req: any, res) => {

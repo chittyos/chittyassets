@@ -1,0 +1,91 @@
+{
+  "application": "ChittyAssets Development",
+  "domain": "dev-assets.chitty.cc",
+  "policies": [
+    {
+      "name": "Local Development Bypass",
+      "decision": "bypass",
+      "priority": 1,
+      "include": [
+        {
+          "ip": {
+            "ranges": ["127.0.0.1/32", "::1/128"]
+          }
+        }
+      ],
+      "description": "Allow localhost access for development"
+    },
+    {
+      "name": "Development Team - Full Access",
+      "decision": "allow",
+      "priority": 2,
+      "include": [
+        {
+          "email_domain": ["@chitty.cc", "@chittyos.com"]
+        }
+      ],
+      "description": "ChittyOS team unrestricted access"
+    },
+    {
+      "name": "GitHub Actions CI",
+      "decision": "service_auth",
+      "priority": 3,
+      "include": [
+        {
+          "service_token": ["${GITHUB_ACTIONS_TOKEN}"]
+        }
+      ],
+      "description": "GitHub Actions deployment and testing"
+    },
+    {
+      "name": "Development Partners",
+      "decision": "allow",
+      "priority": 4,
+      "include": [
+        {
+          "email": ["${DEV_PARTNER_EMAILS}"]
+        }
+      ],
+      "require": [
+        {
+          "auth_method": {
+            "otp": true
+          }
+        }
+      ],
+      "session_duration": "12h",
+      "description": "Development partners with OTP"
+    },
+    {
+      "name": "Block Public Access",
+      "decision": "block",
+      "priority": 5,
+      "include": [
+        {
+          "everyone": true
+        }
+      ],
+      "exclude": [
+        {
+          "email_domain": ["@chitty.cc", "@chittyos.com"]
+        },
+        {
+          "service_token": ["${GITHUB_ACTIONS_TOKEN}", "${DEV_SERVICE_TOKEN}"]
+        }
+      ],
+      "description": "Block all public access except authorized users"
+    }
+  ],
+  "session_settings": {
+    "default_duration": "24h",
+    "max_duration": "72h",
+    "inactivity_timeout": "4h"
+  },
+  "cors_settings": {
+    "allowed_origins": ["*"],
+    "allowed_methods": ["*"],
+    "allowed_headers": ["*"],
+    "max_age": 0
+  },
+  "debug_mode": true
+}

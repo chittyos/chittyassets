@@ -1,0 +1,141 @@
+{
+  "application": "ChittyAssets Staging",
+  "domain": "staging-assets.chitty.cc",
+  "policies": [
+    {
+      "name": "Service-to-Service Authentication",
+      "decision": "service_auth",
+      "priority": 1,
+      "include": [
+        {
+          "service_token": ["${CHITTY_STAGING_SERVICE_TOKEN}"]
+        }
+      ],
+      "description": "Allow staging service authentication"
+    },
+    {
+      "name": "Public Test Endpoints",
+      "decision": "bypass",
+      "priority": 2,
+      "include": [
+        {
+          "everyone": true
+        }
+      ],
+      "path_rules": [
+        "/api/health",
+        "/api/version",
+        "/api/test/public"
+      ],
+      "description": "Public test endpoints for monitoring"
+    },
+    {
+      "name": "Development Team Access",
+      "decision": "allow",
+      "priority": 3,
+      "include": [
+        {
+          "email_domain": ["@chitty.cc", "@chittyos.com"]
+        }
+      ],
+      "require": [
+        {
+          "auth_method": {
+            "idp": "ChittyAuth"
+          }
+        }
+      ],
+      "description": "ChittyOS team access to staging"
+    },
+    {
+      "name": "QA Testers Access",
+      "decision": "allow",
+      "priority": 4,
+      "include": [
+        {
+          "idp_groups": ["chitty_qa", "chitty_testers"]
+        }
+      ],
+      "require": [
+        {
+          "geo": {
+            "country": ["US", "CA", "GB", "AU"]
+          }
+        }
+      ],
+      "session_duration": "8h",
+      "description": "QA team access with geo restrictions"
+    },
+    {
+      "name": "External Beta Testers",
+      "decision": "allow",
+      "priority": 5,
+      "include": [
+        {
+          "email": ["${BETA_TESTER_EMAILS}"]
+        }
+      ],
+      "require": [
+        {
+          "auth_method": {
+            "otp": true
+          }
+        }
+      ],
+      "path_rules": [
+        "/dashboard",
+        "/api/assets/*"
+      ],
+      "session_duration": "4h",
+      "description": "Beta testers with OTP requirement"
+    },
+    {
+      "name": "Automated Testing Services",
+      "decision": "service_auth",
+      "priority": 6,
+      "include": [
+        {
+          "service_token": ["${CI_SERVICE_TOKEN}"]
+        }
+      ],
+      "path_rules": [
+        "/api/test/*"
+      ],
+      "description": "CI/CD automated testing access"
+    },
+    {
+      "name": "Block Production IPs",
+      "decision": "block",
+      "priority": 7,
+      "include": [
+        {
+          "ip": {
+            "ranges": ["${PRODUCTION_IP_RANGES}"]
+          }
+        }
+      ],
+      "exclude": [
+        {
+          "email_domain": ["@chitty.cc"]
+        }
+      ],
+      "description": "Prevent production access to staging"
+    }
+  ],
+  "session_settings": {
+    "default_duration": "8h",
+    "max_duration": "24h",
+    "inactivity_timeout": "1h"
+  },
+  "cors_settings": {
+    "allowed_origins": [
+      "https://staging.chitty.cc",
+      "https://staging-*.chitty.cc",
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ],
+    "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    "allowed_headers": ["*"],
+    "max_age": 3600
+  }
+}

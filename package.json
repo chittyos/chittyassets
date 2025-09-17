@@ -26,7 +26,9 @@
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "install-github-app": "node scripts/install-github-app.js",
+    "test:github-app": "node scripts/test-github-app.js"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.83",

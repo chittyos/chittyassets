@@ -1,0 +1,231 @@
+{
+  "application": "ChittyAssets Production",
+  "domain": "assets.chitty.cc",
+  "policies": [
+    {
+      "name": "Service-to-Service Authentication",
+      "decision": "service_auth",
+      "priority": 1,
+      "include": [
+        {
+          "service_token": ["${CHITTY_API_SERVICE_TOKEN}"]
+        }
+      ],
+      "description": "Allow ChittyOS ecosystem services to authenticate"
+    },
+    {
+      "name": "Public Assets API - Read Only",
+      "decision": "bypass",
+      "priority": 2,
+      "include": [
+        {
+          "everyone": true
+        }
+      ],
+      "path_rules": [
+        "/api/assets/public/*",
+        "/api/ecosystem/status",
+        "/api/health"
+      ],
+      "description": "Public endpoints for asset viewing and system status"
+    },
+    {
+      "name": "ChittyAuth Webhook Endpoints",
+      "decision": "service_auth",
+      "priority": 3,
+      "include": [
+        {
+          "service_token": ["${CLERK_WEBHOOK_TOKEN}"]
+        }
+      ],
+      "path_rules": [
+        "/api/auth/webhook/*"
+      ],
+      "description": "Clerk/ChittyAuth webhook endpoints"
+    },
+    {
+      "name": "Verified ChittyID Users - Full Access",
+      "decision": "allow",
+      "priority": 4,
+      "include": [
+        {
+          "email_domain": ["@chitty.cc", "@chittyos.com"]
+        }
+      ],
+      "require": [
+        {
+          "auth_method": {
+            "idp": "ChittyAuth"
+          }
+        },
+        {
+          "device_posture": ["chitty_verified_device"]
+        }
+      ],
+      "exclude": [
+        {
+          "email": [
+            "suspended@chitty.cc",
+            "temp-*@chitty.cc"
+          ]
+        }
+      ],
+      "description": "Verified ChittyOS team members with device verification"
+    },
+    {
+      "name": "Partner Organization Access",
+      "decision": "allow",
+      "priority": 5,
+      "include": [
+        {
+          "idp_groups": ["chitty_partners"]
+        }
+      ],
+      "require": [
+        {
+          "geo": {
+            "country": ["US", "CA", "GB", "AU", "NZ", "IE"]
+          }
+        },
+        {
+          "certificate": true
+        }
+      ],
+      "path_rules": [
+        "/api/assets/*",
+        "/dashboard"
+      ],
+      "description": "Partner organizations with certificate validation"
+    },
+    {
+      "name": "External Contractors - Limited Access",
+      "decision": "allow",
+      "priority": 6,
+      "include": [
+        {
+          "email": ["${CONTRACTOR_EMAILS}"]
+        }
+      ],
+      "require": [
+        {
+          "ip": {
+            "ranges": ["${CONTRACTOR_VPN_RANGES}"]
+          }
+        },
+        {
+          "auth_method": {
+            "mfa": true
+          }
+        }
+      ],
+      "exclude": [
+        {
+          "geo": {
+            "country": ["RU", "CN", "KP", "IR"]
+          }
+        }
+      ],
+      "path_rules": [
+        "/api/assets/read/*",
+        "/api/user/profile"
+      ],
+      "session_duration": "2h",
+      "description": "Contractors with VPN and MFA requirements"
+    },
+    {
+      "name": "Emergency Access - Break Glass",
+      "decision": "allow",
+      "priority": 7,
+      "include": [
+        {
+          "email": [
+            "emergency@chitty.cc",
+            "security@chitty.cc"
+          ]
+        }
+      ],
+      "require": [
+        {
+          "auth_method": {
+            "mfa": true
+          }
+        },
+        {
+          "common_name": "emergency.chitty.cc"
+        }
+      ],
+      "session_duration": "30m",
+      "purpose_justification": {
+        "required": true,
+        "title": "Emergency Access Justification"
+      },
+      "description": "Emergency access with audit logging"
+    },
+    {
+      "name": "Block Suspicious Activity",
+      "decision": "block",
+      "priority": 8,
+      "include": [
+        {
+          "ip": {
+            "ranges": ["${BLOCKED_IP_RANGES}"]
+          }
+        }
+      ],
+      "description": "Block known malicious IPs"
+    },
+    {
+      "name": "Block High-Risk Countries",
+      "decision": "block",
+      "priority": 9,
+      "include": [
+        {
+          "geo": {
+            "country": ["RU", "CN", "KP", "IR", "SY"]
+          }
+        }
+      ],
+      "exclude": [
+        {
+          "email_domain": ["@chitty.cc"]
+        }
+      ],
+      "description": "Block high-risk countries except ChittyOS team"
+    },
+    {
+      "name": "Development Team - Admin Access",
+      "decision": "allow",
+      "priority": 10,
+      "include": [
+        {
+          "idp_groups": ["chitty_developers", "chitty_admins"]
+        }
+      ],
+      "require": [
+        {
+          "device_posture": ["chitty_managed_device"]
+        },
+        {
+          "warp": true
+        }
+      ],
+      "path_rules": ["/*"],
+      "description": "Full access for development team with WARP"
+    }
+  ],
+  "session_settings": {
+    "default_duration": "24h",
+    "max_duration": "168h",
+    "inactivity_timeout": "2h"
+  },
+  "cors_settings": {
+    "allowed_origins": [
+      "https://chitty.cc",
+      "https://*.chitty.cc",
+      "https://chittyos.com"
+    ],
+    "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allowed_headers": ["Authorization", "Content-Type", "X-ChittyAuth-Token"],
+    "max_age": 86400
+  }
+}
