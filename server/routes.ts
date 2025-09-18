@@ -7,12 +7,15 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { aiAnalysisService } from "./aiAnalysis";
 import { seedDemoData } from "./seedData";
-import { chittyCloudMcp } from "./chittyCloudMcp";
+import { initializeChittyCore, getChittyServices, getEvidenceLedger } from "./chittyCore";
 import { insertAssetSchema, insertEvidenceSchema, insertTimelineEventSchema, 
          insertWarrantySchema, insertInsurancePolicySchema, insertLegalCaseSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize ChittyCloudflare Core
+  await initializeChittyCore();
+
   // ChittyAuth middleware
   await chittyAuth.setupAuth(app);
 
@@ -43,10 +46,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ChittyCloud MCP integration routes
+  // ChittyOS Evidence Ledger routes
+  app.post('/api/evidence-ledger/submit', requireChittyAuth(), async (req: any, res) => {
+    try {
+      const userId = `chitty_${req.auth.userId}`;
+      const evidenceLedger = await getEvidenceLedger();
+
+      const result = await evidenceLedger.submitEvidence({
+        evidenceType: req.body.evidenceType,
+        data: req.body.data,
+        metadata: {
+          ...req.body.metadata,
+          submissionSource: 'ChittyAssets',
+        },
+        submitterId: userId,
+      });
+
+      res.json({
+        success: true,
+        chittyId: result.chittyId,
+        status: result.status,
+        trustScore: result.trustScore,
+        retentionUntil: result.retentionUntil,
+        chainResult: result.chainResult,
+      });
+    } catch (error) {
+      console.error("Error submitting evidence:", error);
+      res.status(500).json({ message: "Failed to submit evidence to ledger" });
+    }
+  });
+
+  app.get('/api/evidence-ledger/:chittyId', requireChittyAuth(), async (req: any, res) => {
+    try {
+      const evidenceLedger = await getEvidenceLedger();
+      const evidence = await evidenceLedger.getEvidence(req.params.chittyId);
+
+      res.json(evidence);
+    } catch (error) {
+      console.error("Error retrieving evidence:", error);
+      res.status(500).json({ message: "Failed to retrieve evidence" });
+    }
+  });
+
+  app.post('/api/evidence-ledger/:chittyId/verify', requireChittyAuth(), async (req: any, res) => {
+    try {
+      const evidenceLedger = await getEvidenceLedger();
+      const verification = await evidenceLedger.verifyEvidence(req.params.chittyId);
+
+      res.json(verification);
+    } catch (error) {
+      console.error("Error verifying evidence:", error);
+      res.status(500).json({ message: "Failed to verify evidence" });
+    }
+  });
+
+  // ChittyOS Ecosystem status
   app.get('/api/ecosystem/status', requireChittyAuth(), async (req: any, res) => {
     try {
-      const status = await chittyCloudMcp.getEcosystemStatus();
+      const services = await getChittyServices();
+      const status = await services.getEcosystemStatus();
       res.json(status);
     } catch (error) {
       console.error("Error fetching ecosystem status:", error);
@@ -64,7 +122,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Freeze asset on ChittyChain
-      const freezeResult = await chittyCloudMcp.freezeAsset(asset.chittyId || asset.id, asset);
+      const services = await getChittyServices();
+      const freezeResult = await services.assets.freeze(asset.chittyId || asset.id);
 
       if (!freezeResult.success) {
         return res.status(500).json({ message: freezeResult.error });
@@ -108,9 +167,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Mint evidence token
-      const mintResult = await chittyCloudMcp.mintAssetToken(
-        asset.chittyId || asset.id, 
-        asset.ipfsHash || 'placeholder'
+      const services = await getChittyServices();
+      const mintResult = await services.chain.mint(
+        asset.chittyId || asset.id,
+        { ipfsHash: asset.ipfsHash || 'placeholder' }
       );
 
       if (!mintResult.success) {
@@ -190,11 +250,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = `chitty_${req.auth.userId}`;
       
-      // Generate ChittyChain identifier via MCP
-      const chittyId = await chittyCloudMcp.generateChittyId();
-      
+      // Generate ChittyChain identifier via Core
+      const services = await getChittyServices();
+      const chittyIdResult = await services.id.generate('asset');
+      const chittyId = chittyIdResult.chittyId || chittyIdResult.id;
+
       // Calculate trust score using ChittyTrust
-      const trustResult = await chittyCloudMcp.calculateTrustScore(chittyId, req.body);
+      const trustResult = await services.trust.calculate(chittyId, req.body);
       
       const assetData = insertAssetSchema.parse({ 
         ...req.body, 

@@ -6,7 +6,14 @@
       "Bash(npm install:*)",
       "Bash(npm test)",
       "Bash(npx vitest run:*)",
-      "Bash(npm run check:*)"
+      "Bash(npm run check:*)",
+      "Bash(npm run dev:*)",
+      "Bash(node:*)",
+      "Bash(npm run build:*)",
+      "Bash(curl:*)",
+      "Bash(ss:*)",
+      "Bash(NODE_ENV=development npm run dev)",
+      "Bash(wrangler pages deploy:*)"
     ],
     "deny": [],
     "ask": []

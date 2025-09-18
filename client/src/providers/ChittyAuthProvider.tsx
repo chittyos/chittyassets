@@ -1,6 +1,5 @@
 import React from 'react';
 import { ClerkProvider, SignIn, SignUp, UserButton } from '@clerk/clerk-react';
-import { useNavigate } from 'wouter';
 
 const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 
@@ -13,12 +12,14 @@ interface ChittyAuthProviderProps {
 }
 
 export function ChittyAuthProvider({ children }: ChittyAuthProviderProps) {
-  const [, navigate] = useNavigate();
+  // If no Clerk key, just render children without provider
+  if (!clerkPublishableKey) {
+    return <>{children}</>;
+  }
 
   return (
     <ClerkProvider
       publishableKey={clerkPublishableKey}
-      navigate={(to) => navigate(to)}
       appearance={{
         baseTheme: undefined,
         variables: {

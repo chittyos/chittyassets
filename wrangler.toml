@@ -1,0 +1,27 @@
+# Cloudflare Pages configuration
+pages_build_output_dir = "dist/public"
+
+# Worker configuration for backend API
+name = "chittyassets-api"
+main = "dist/index.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+name = "chittyassets-api-prod"
+
+# Environment variables
+[vars]
+NODE_ENV = "production"
+
+# KV namespaces for session storage if needed
+# [[kv_namespaces]]
+# binding = "SESSIONS"
+# id = "your-kv-namespace-id"
+# preview_id = "your-preview-kv-namespace-id"
+
+# D1 database bindings if needed
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "chittyassets"
+# database_id = "your-database-id"

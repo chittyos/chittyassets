@@ -4,6 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 
+// Mock auth for when Clerk is not configured
+const MOCK_AUTH = !import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
 export interface ChittyUser {
   id: string;
   email?: string;
@@ -20,10 +23,18 @@ export interface ChittyUser {
 }
 
 export function useChittyAuth() {
-  const { isLoaded, userId, sessionId, getToken, signOut } = useClerkAuth();
-  const { user: clerkUser } = useClerkUser();
+  const clerkAuth = MOCK_AUTH ? null : useClerkAuth();
+  const clerkUserData = MOCK_AUTH ? null : useClerkUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Mock data when Clerk is not configured
+  const isLoaded = MOCK_AUTH ? true : clerkAuth?.isLoaded;
+  const userId = MOCK_AUTH ? 'mock_user_123' : clerkAuth?.userId;
+  const sessionId = MOCK_AUTH ? 'mock_session_123' : clerkAuth?.sessionId;
+  const getToken = MOCK_AUTH ? (() => Promise.resolve('mock_token')) : clerkAuth?.getToken;
+  const signOut = MOCK_AUTH ? (() => {}) : clerkAuth?.signOut;
+  const clerkUser = MOCK_AUTH ? null : clerkUserData?.user;
 
   const chittyId = userId ? `chitty_${userId}` : null;
 
@@ -33,7 +44,25 @@ export function useChittyAuth() {
     queryFn: async () => {
       if (!chittyId) return null;
 
-      const token = await getToken();
+      // Return mock data when in mock mode
+      if (MOCK_AUTH) {
+        return {
+          id: 'mock_user_123',
+          email: 'demo@chitty.cc',
+          firstName: 'Demo',
+          lastName: 'User',
+          profileImageUrl: '',
+          verification: {
+            email: true,
+            phone: false,
+            document: false,
+            overallStatus: 'pending' as const,
+            verificationLevel: 1,
+          },
+        } as ChittyUser;
+      }
+
+      const token = await getToken?.();
       const response = await fetch('/api/auth/profile', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -90,7 +119,18 @@ export function useChittyAuth() {
     queryFn: async () => {
       if (!chittyId) return null;
 
-      const token = await getToken();
+      // Return mock data when in mock mode
+      if (MOCK_AUTH) {
+        return {
+          email: true,
+          phone: false,
+          document: false,
+          overallStatus: 'pending',
+          verificationLevel: 1,
+        };
+      }
+
+      const token = await getToken?.();
       const response = await fetch('/api/auth/verification-status', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -104,7 +144,7 @@ export function useChittyAuth() {
       return response.json();
     },
     enabled: !!chittyId,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: MOCK_AUTH ? false : 30000, // Don't refetch in mock mode
   });
 
   // Update profile mutation

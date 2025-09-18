@@ -4,8 +4,7 @@
  * Underpinned by Clerk for secure authentication infrastructure
  */
 
-import { ClerkExpressRequireAuth, ClerkExpressWithAuth, RequireAuthProp, WithAuthProp } from '@clerk/express';
-import { clerkClient, createClerkClient } from '@clerk/backend';
+import { clerkMiddleware, requireAuth, getAuth, createClerkClient } from '@clerk/express';
 import type { Express, RequestHandler, Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
 
@@ -263,9 +262,10 @@ export class ChittyAuth {
     });
 
     // Verify identity
-    app.post('/api/auth/verify', ClerkExpressRequireAuth(), async (req: RequireAuthProp<Request>, res) => {
+    app.post('/api/auth/verify', requireAuth(), async (req: Request, res) => {
       try {
-        const clerkId = req.auth.userId;
+        const auth = getAuth(req);
+        const clerkId = auth.userId;
         const chittyId = `chitty_${clerkId}`;
         const { method } = req.body;
 
@@ -284,9 +284,10 @@ export class ChittyAuth {
     });
 
     // Get verification status
-    app.get('/api/auth/verification-status', ClerkExpressRequireAuth(), async (req: RequireAuthProp<Request>, res) => {
+    app.get('/api/auth/verification-status', requireAuth(), async (req: Request, res) => {
       try {
-        const clerkId = req.auth.userId;
+        const auth = getAuth(req);
+        const clerkId = auth.userId;
         const chittyId = `chitty_${clerkId}`;
 
         const status = await this.chittyVerify.getVerificationStatus(chittyId);
@@ -301,9 +302,10 @@ export class ChittyAuth {
     });
 
     // Get ChittyID profile
-    app.get('/api/auth/profile', ClerkExpressRequireAuth(), async (req: RequireAuthProp<Request>, res) => {
+    app.get('/api/auth/profile', requireAuth(), async (req: Request, res) => {
       try {
-        const clerkId = req.auth.userId;
+        const auth = getAuth(req);
+        const clerkId = auth.userId;
         const chittyId = `chitty_${clerkId}`;
 
         const identity = await this.chittyId.getIdentity(chittyId);
@@ -322,9 +324,10 @@ export class ChittyAuth {
     });
 
     // Update ChittyID profile
-    app.put('/api/auth/profile', ClerkExpressRequireAuth(), async (req: RequireAuthProp<Request>, res) => {
+    app.put('/api/auth/profile', requireAuth(), async (req: Request, res) => {
       try {
-        const clerkId = req.auth.userId;
+        const auth = getAuth(req);
+        const clerkId = auth.userId;
         const chittyId = `chitty_${clerkId}`;
 
         const updated = await this.chittyId.updateIdentity(chittyId, req.body);
@@ -346,25 +349,26 @@ export class ChittyAuth {
    * Middleware to require ChittyAuth authentication
    */
   requireAuth(): RequestHandler {
-    return ClerkExpressRequireAuth();
+    return requireAuth();
   }
 
   /**
    * Middleware to optionally include ChittyAuth authentication
    */
   withAuth(): RequestHandler {
-    return ClerkExpressWithAuth();
+    return clerkMiddleware();
   }
 
   /**
    * Middleware to require verified ChittyID
    */
   requireVerified(): RequestHandler {
-    return async (req: RequireAuthProp<Request>, res: Response, next: NextFunction) => {
+    return async (req: Request, res: Response, next: NextFunction) => {
       try {
         // First check Clerk auth
-        await ClerkExpressRequireAuth()(req, res, async () => {
-          const clerkId = req.auth.userId;
+        await requireAuth()(req, res, async () => {
+          const auth = getAuth(req);
+          const clerkId = auth.userId;
           const chittyId = `chitty_${clerkId}`;
 
           const status = await this.chittyVerify.getVerificationStatus(chittyId);
