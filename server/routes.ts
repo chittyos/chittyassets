@@ -8,9 +8,10 @@ import { ObjectPermission } from "./objectAcl";
 import { aiAnalysisService } from "./aiAnalysis";
 import { seedDemoData } from "./seedData";
 import { initializeChittyCore, getChittyServices, getEvidenceLedger } from "./chittyCore";
-import { insertAssetSchema, insertEvidenceSchema, insertTimelineEventSchema, 
+import { insertAssetSchema, insertEvidenceSchema, insertTimelineEventSchema,
          insertWarrantySchema, insertInsurancePolicySchema, insertLegalCaseSchema } from "@shared/schema";
 import { z } from "zod";
+import { listToolResources } from "./toolRegistry";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize ChittyCloudflare Core
@@ -110,6 +111,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching ecosystem status:", error);
       res.status(500).json({ message: "Failed to fetch ecosystem status" });
     }
+  });
+
+  // API Tool Surface - expose all available connectors to the agent layer
+  app.get('/api/tools/resources', requireChittyAuth(), (_req: any, res) => {
+    const resources = listToolResources();
+    res.json({
+      resources,
+      callableResources: resources.filter(r => r.callable).map(r => r.id),
+    });
   });
 
   app.post('/api/assets/:id/freeze', requireChittyAuth(), async (req: any, res) => {
