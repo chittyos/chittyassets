@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { listToolResources } from '../../toolRegistry';
 
 // Simple integration test to verify API concepts
 describe('API Integration Tests', () => {
@@ -65,5 +66,22 @@ describe('API Integration Tests', () => {
     expect(deserialized).toEqual(testData);
     expect(typeof deserialized.value).toBe('number');
     expect(Array.isArray(deserialized.tags)).toBe(true);
+  });
+
+  it('should surface all connectors as callable tool resources', () => {
+    const resources = listToolResources();
+    const callableIds = resources.filter(resource => resource.callable).map(resource => resource.id);
+
+    const requiredConnectors = [
+      'cloudflare.workers.assets',
+      'notion.search',
+      'google.drive.search',
+      'outlook.mail.search',
+      'neon.metadata.search',
+    ];
+
+    requiredConnectors.forEach(connector => {
+      expect(callableIds).toContain(connector);
+    });
   });
 });
