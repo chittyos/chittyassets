@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { listToolResources } from '../../toolRegistry';
 
 // Simple integration test to verify API concepts
