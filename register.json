@@ -1,0 +1,281 @@
+{
+  "uri": "chittycanon://core/services/chittyassets",
+  "canonical_uri": "chittycanon://core/services/chittyassets",
+  "name": "chittyassets",
+  "chitty_id": null,
+  "description": "Blockchain-anchored asset ownership registry and AI-verified evidence ledger for the ChittyOS ecosystem. Registers physical and digital assets, attaches GPT-4o analyzed evidence, enforces a 7-day immutability freeze before blockchain finalization, and exposes ownership proofs for downstream legal and insurance services.",
+  "version": "1.0.0",
+  "tier": 4,
+  "organization": "CHITTYOS",
+  "repository": "https://github.com/CHITTYOS/chittyassets",
+  "primary_url": "https://assets.chitty.cc",
+  "health_endpoint": "https://assets.chitty.cc/health",
+  "status_endpoint": "https://assets.chitty.cc/api/v1/status",
+  "entity_types_handled": ["P", "L", "T", "E", "A"],
+  "endpoints": [
+    {
+      "path": "/health",
+      "method": "GET",
+      "auth": "none",
+      "description": "Health check — returns 200 with service status"
+    },
+    {
+      "path": "/api/v1/status",
+      "method": "GET",
+      "auth": "none",
+      "description": "Service status and version"
+    },
+    {
+      "path": "/api/auth/user",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "Fetch authenticated user record"
+    },
+    {
+      "path": "/api/assets",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "List user assets with optional filters"
+    },
+    {
+      "path": "/api/assets",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "Create asset with ChittyID generation and trust score calculation"
+    },
+    {
+      "path": "/api/assets/stats",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "Aggregate portfolio statistics"
+    },
+    {
+      "path": "/api/assets/:id",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "Fetch single asset by ID"
+    },
+    {
+      "path": "/api/assets/:id",
+      "method": "PUT",
+      "auth": "jwt",
+      "description": "Update asset fields"
+    },
+    {
+      "path": "/api/assets/:id",
+      "method": "DELETE",
+      "auth": "jwt",
+      "description": "Delete asset"
+    },
+    {
+      "path": "/api/assets/:id/freeze",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "Initiate 7-day ChittyChain immutability freeze"
+    },
+    {
+      "path": "/api/assets/:id/mint",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "Mint evidence token on ChittyChain (requires frozen status)"
+    },
+    {
+      "path": "/api/assets/:assetId/evidence",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "List evidence attached to asset"
+    },
+    {
+      "path": "/api/assets/:assetId/evidence",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "Attach evidence record to asset"
+    },
+    {
+      "path": "/api/evidence/:evidenceId/analyze",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "GPT-4o AI analysis of evidence (receipt, document, asset_valuation)"
+    },
+    {
+      "path": "/api/evidence-ledger/submit",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "Submit evidence to ChittyOS evidence ledger (ledger.chitty.cc)"
+    },
+    {
+      "path": "/api/evidence-ledger/:chittyId",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "Retrieve evidence by ChittyID from ledger"
+    },
+    {
+      "path": "/api/evidence-ledger/:chittyId/verify",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "Verify evidence authenticity via ledger"
+    },
+    {
+      "path": "/api/assets/:assetId/timeline",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "Asset lifecycle event timeline"
+    },
+    {
+      "path": "/api/assets/:assetId/warranties",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "List warranties for asset"
+    },
+    {
+      "path": "/api/assets/:assetId/warranties",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "Create warranty record"
+    },
+    {
+      "path": "/api/warranties/expiring",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "List expiring warranties within N days"
+    },
+    {
+      "path": "/api/assets/:assetId/insurance",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "List insurance policies for asset"
+    },
+    {
+      "path": "/api/assets/:assetId/insurance",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "Attach insurance policy to asset"
+    },
+    {
+      "path": "/api/assets/:assetId/calculate-trust-score",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "Recalculate trust score via AI analysis of current evidence"
+    },
+    {
+      "path": "/api/legal-cases",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "List user legal cases"
+    },
+    {
+      "path": "/api/legal-cases",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "Create legal case"
+    },
+    {
+      "path": "/api/legal/generate-document",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "AI-generate legal ownership or chain-of-custody document"
+    },
+    {
+      "path": "/api/ecosystem/status",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "Aggregated health of all ChittyOS upstream services"
+    },
+    {
+      "path": "/api/tools/resources",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "List tool and connector resources available to the agent layer"
+    },
+    {
+      "path": "/objects/:objectPath",
+      "method": "GET",
+      "auth": "jwt",
+      "description": "Stream evidence file from R2 (ACL-enforced via Neon)"
+    },
+    {
+      "path": "/api/objects/upload",
+      "method": "POST",
+      "auth": "jwt",
+      "description": "Get presigned R2 upload URL for evidence file"
+    },
+    {
+      "path": "/api/evidence-files",
+      "method": "PUT",
+      "auth": "jwt",
+      "description": "Set ACL policy on uploaded evidence file"
+    }
+  ],
+  "schema": {
+    "version": "1.0.0",
+    "entities": [
+      "users",
+      "assets",
+      "evidence",
+      "aiAnalysisResults",
+      "timelineEvents",
+      "warranties",
+      "insurancePolicies",
+      "legalCases"
+    ],
+    "relationships": [
+      "chittycanon://rel/asset-has-evidence",
+      "chittycanon://rel/asset-has-timeline",
+      "chittycanon://rel/asset-has-warranty",
+      "chittycanon://rel/asset-has-insurance",
+      "chittycanon://rel/evidence-has-ai-analysis",
+      "chittycanon://rel/user-owns-asset",
+      "chittycanon://rel/user-has-legal-case"
+    ]
+  },
+  "security": {
+    "authentication": "jwt",
+    "encryption": "tls",
+    "authProvider": "chittycanon://core/services/auth",
+    "evidenceEncryption": "AES-256-GCM",
+    "fileAcl": "private-by-default"
+  },
+  "dependencies": {
+    "upstream": [
+      "chittycanon://core/services/auth",
+      "chittycanon://core/services/identity",
+      "chittycanon://core/services/trust",
+      "chittycanon://core/services/schema",
+      "chittycanon://core/services/chain",
+      "chittycanon://core/services/evidence"
+    ],
+    "downstream": [
+      "chittycanon://core/services/chronicle",
+      "chittycanon://core/services/discovery"
+    ],
+    "peer": [
+      "chittycanon://core/services/chittyscore"
+    ],
+    "external": [
+      "openai-gpt4o",
+      "cloudflare-r2",
+      "neon-postgresql"
+    ]
+  },
+  "compliance": {
+    "legalFramework": "USA_FEDERAL",
+    "evidenceStandard": "FRE",
+    "retentionDays": 2555,
+    "chainOfCustody": "strict",
+    "jurisdiction": "USA"
+  },
+  "deployment": {
+    "platform": "cloudflare-workers",
+    "workerName": "chittyassets-api-prod",
+    "route": "assets.chitty.cc/*",
+    "zone": "chitty.cc",
+    "compatibilityDate": "2026-03-28",
+    "compatibilityFlags": ["nodejs_compat"],
+    "framework": "hono",
+    "migrationStatus": "MIGRATING_EXPRESS_TO_HONO"
+  },
+  "observability": {
+    "tailConsumers": ["chittytrack"]
+  },
+  "certificationLevel": "BRONZE"
+}
