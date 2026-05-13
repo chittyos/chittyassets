@@ -45,8 +45,16 @@
         "CHITTYCONNECT_URL": "https://connect.chitty.cc",
         "CHITTYLEDGER_URL": "https://ledger.chitty.cc"
       }
-      // Phase 2+ bindings (see CHARTER §Compliance Flags):
-      // "hyperdrive": [{ "binding": "CHITTYASSETS_DB", "id": "<hyperdrive-id>" }],
+      ,
+      "hyperdrive": [
+        { "binding": "CHITTYASSETS_DB", "id": "4bd7964c46dd42be86e8a5e3dd0d7376" }
+      ],
+      "assets": {
+        "directory": "dist/public",
+        "binding": "ASSETS",
+        "not_found_handling": "single-page-application"
+      }
+      // Phase 4 bindings:
       // "r2_buckets": [
       //   { "binding": "EVIDENCE",  "bucket_name": "chittyassets-evidence" },
       //   { "binding": "PROCESSED", "bucket_name": "chittyassets-processed" }
