@@ -1,0 +1,72 @@
+// chittyassets — Cloudflare Workers configuration (backend API)
+// Frontend SPA (Cloudflare Pages) is deployed separately from `dist/public`.
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "name": "chittyassets-api",
+  "account_id": "0bc21e3a5a9de1a4cc843be9c3e98121",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2026-03-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "tail_consumers": [
+    { "service": "chittytrack" }
+  ],
+  "vars": {
+    "ENVIRONMENT": "development",
+    "CHITTYAUTH_ISSUER": "https://auth.chitty.cc",
+    "CHITTYAUTH_JWKS_URL": "https://auth.chitty.cc/.well-known/jwks.json",
+    "CHITTYAUTH_AUDIENCE": "chittyassets-api",
+    "CHITTYMINT_URL": "https://mint.chitty.cc",
+    "CHITTYCONNECT_URL": "https://connect.chitty.cc",
+    "CHITTYLEDGER_URL": "https://ledger.chitty.cc"
+  },
+  "env": {
+    "production": {
+      "name": "chittyassets-api-prod",
+      "routes": [
+        { "pattern": "assets.chitty.cc/*", "zone_name": "chitty.cc" }
+      ],
+      "workers_dev": false,
+      "observability": {
+        "enabled": true
+      },
+      "tail_consumers": [
+        { "service": "chittytrack" }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "CHITTYAUTH_ISSUER": "https://auth.chitty.cc",
+        "CHITTYAUTH_JWKS_URL": "https://auth.chitty.cc/.well-known/jwks.json",
+        "CHITTYAUTH_AUDIENCE": "chittyassets-api",
+        "CHITTYMINT_URL": "https://mint.chitty.cc",
+        "CHITTYCONNECT_URL": "https://connect.chitty.cc",
+        "CHITTYLEDGER_URL": "https://ledger.chitty.cc"
+      }
+      ,
+      "hyperdrive": [
+        { "binding": "CHITTYASSETS_DB", "id": "4bd7964c46dd42be86e8a5e3dd0d7376" }
+      ],
+      "assets": {
+        "directory": "dist/public",
+        "binding": "ASSETS",
+        "not_found_handling": "single-page-application"
+      }
+      // Phase 4 bindings:
+      // "r2_buckets": [
+      //   { "binding": "EVIDENCE",  "bucket_name": "chittyassets-evidence" },
+      //   { "binding": "PROCESSED", "bucket_name": "chittyassets-processed" }
+      // ],
+      // "services": [{ "binding": "CHITTYCONNECT", "service": "chittyconnect" }]
+    }
+  },
+  "dev": {
+    "port": 8788,
+    "local_protocol": "http"
+  },
+  "limits": {
+    "cpu_ms": 60000
+  }
+}
