@@ -19,8 +19,8 @@ export interface Env {
   CHITTYCONNECT_URL?: string;
   CHITTYLEDGER_URL?: string;
 
-  // Phase 2+ bindings:
-  // CHITTYASSETS_DB: Hyperdrive;
+  // Phase 2+ bindings (active):
+  CHITTYASSETS_DB: Hyperdrive;
   // EVIDENCE: R2Bucket;
   // PROCESSED: R2Bucket;
   // CHITTYCONNECT: Fetcher;

@@ -1,12 +1,15 @@
 // @canon: chittycanon://core/services/chittyassets
 // chittyassets Worker entrypoint (Hono). Tier 4 Domain service.
-// Phase 1 of Express→Hono migration: skeleton + auth + health.
+// Phase 2a: asset read routes ported (GET /api/assets, /api/assets/stats,
+//           /api/assets/:id, /api/assets/:assetId/evidence,
+//           /api/assets/:assetId/timeline).
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { ENTITY_TYPES, type ChittyAuthClaims, type Env } from "./env";
 import { requireChittyAuth } from "./auth";
+import { assetRoutes } from "./routes/assets";
 
 type Variables = { claims: ChittyAuthClaims };
 
@@ -53,7 +56,14 @@ app.get("/api/v1/status", (c) =>
     canonical_uri: "chittycanon://core/services/chittyassets",
     version: "1.0.0",
     environment: c.env.ENVIRONMENT,
-    migration_status: "MIGRATING_EXPRESS_TO_HONO",
+    migration_status: "PHASE_2A_ASSET_READS",
+    migrated_routes: [
+      "GET /api/assets",
+      "GET /api/assets/stats",
+      "GET /api/assets/:id",
+      "GET /api/assets/:assetId/evidence",
+      "GET /api/assets/:assetId/timeline",
+    ],
     entity_types_handled: [...ENTITY_TYPES],
     dependencies: {
       chittyauth: c.env.CHITTYAUTH_ISSUER,
@@ -74,6 +84,9 @@ app.get("/api/auth/user", requireChittyAuth, (c) => {
     email: claims.email ?? null,
   });
 });
+
+// Phase 2a asset read routes — registered BEFORE the 501 catch-all.
+app.route("/api", assetRoutes);
 
 // Unmigrated routes return 501 unconditionally — no auth oracle.
 app.all("/api/*", (c) =>
