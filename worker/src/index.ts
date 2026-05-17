@@ -14,6 +14,15 @@
 //   (POST /api/assets/:assetId/warranties,
 //    POST /api/assets/:assetId/insurance,
 //    POST /api/legal-cases).
+// Phase 3c: heavy writes with external service calls
+//   (POST /api/assets/:id/freeze,
+//    POST /api/assets/:id/mint,
+//    POST /api/assets/:assetId/calculate-trust-score,
+//    POST /api/evidence/:evidenceId/analyze,
+//    POST /api/legal/generate-document,
+//    POST /api/evidence-ledger/submit,
+//    POST /api/evidence-ledger/:chittyId/verify,
+//    POST /api/seed-demo  [dev-only]).
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -28,6 +37,7 @@ import { toolRoutes } from "./routes/tools";
 import { evidenceLedgerRoutes } from "./routes/evidence-ledger";
 import { ecosystemRoutes } from "./routes/ecosystem";
 import { evidenceRoutes } from "./routes/evidence";
+import { seedRoutes } from "./routes/seed";
 
 type Variables = { claims: ChittyAuthClaims };
 
@@ -74,7 +84,7 @@ app.get("/api/v1/status", (c) =>
     canonical_uri: "chittycanon://core/services/chittyassets",
     version: "1.0.0",
     environment: c.env.ENVIRONMENT,
-    migration_status: "PHASE_3B_DOMAIN_WRITES",
+    migration_status: "PHASE_3C_HEAVY_WRITES",
     migrated_routes: [
       "GET /api/assets",
       "GET /api/assets/stats",
@@ -95,6 +105,14 @@ app.get("/api/v1/status", (c) =>
       "POST /api/assets/:assetId/warranties",
       "POST /api/assets/:assetId/insurance",
       "POST /api/legal-cases",
+      "POST /api/assets/:id/freeze",
+      "POST /api/assets/:id/mint",
+      "POST /api/assets/:assetId/calculate-trust-score",
+      "POST /api/evidence/:evidenceId/analyze",
+      "POST /api/legal/generate-document",
+      "POST /api/evidence-ledger/submit",
+      "POST /api/evidence-ledger/:chittyId/verify",
+      "POST /api/seed-demo",
     ],
     entity_types_handled: [...ENTITY_TYPES],
     dependencies: {
@@ -126,6 +144,7 @@ app.route("/api", toolRoutes);
 app.route("/api", evidenceLedgerRoutes);
 app.route("/api", ecosystemRoutes);
 app.route("/api", evidenceRoutes);
+app.route("/api", seedRoutes);
 
 // Unmigrated routes return 501 unconditionally — no auth oracle.
 app.all("/api/*", (c) =>

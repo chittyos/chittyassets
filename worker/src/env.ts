@@ -26,6 +26,11 @@ export interface Env {
   CHITTYRESOLUTION_URL?: string;
   CHITTYFILE_URL?: string;
 
+  // Phase 3c — OpenAI for AI analysis & document generation. Worker SECRET
+  // (set via `wrangler secret put OPENAI_API_KEY`); never a `vars` entry.
+  // Handlers return 503 service_unavailable if unset rather than crashing.
+  OPENAI_API_KEY?: string;
+
   // Phase 2+ bindings (active):
   CHITTYASSETS_DB: Hyperdrive;
   // EVIDENCE: R2Bucket;

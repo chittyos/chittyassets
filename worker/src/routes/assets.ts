@@ -31,6 +31,16 @@ import {
 import { requireChittyAuth } from "../auth";
 import { getDb } from "../db";
 import type { Env, ChittyAuthClaims } from "../env";
+import {
+  freezeAsset,
+  mintAssetToken,
+  MintClientError,
+} from "../clients/chittymint";
+import {
+  calculateTrustScore,
+  OpenAIClientError,
+  OpenAIConfigError,
+} from "../clients/openai";
 
 // -----------------------------------------------------------------
 // Input validation schemas — server-controlled fields are stripped.
@@ -419,6 +429,241 @@ export function registerAssetRoutes(
       return c.json({ message: "Asset not found" }, 404);
     }
     return c.body(null, 204);
+  });
+
+  // -----------------------------------------------------------------
+  // POST /api/assets/:id/freeze — Phase 3c
+  // Mirrors Express server/routes.ts:125. Calls ChittyMint freeze endpoint,
+  // updates asset row to {chittyChainStatus:'frozen', ipfsHash, freezeTimestamp},
+  // and emits a timeline_events row in the same transaction.
+  // -----------------------------------------------------------------
+  app.post("/assets/:id/freeze", authMiddleware, async (c) => {
+    const claims = c.get("claims");
+    const userId = claims.chitty_id;
+    const { id } = c.req.param();
+
+    if (!isValidId(id)) {
+      return c.json(
+        { error: "invalid_id", message: "Asset ID must be a valid UUID" },
+        400,
+      );
+    }
+
+    const db = getDb(c.env.CHITTYASSETS_DB.connectionString);
+    const [asset] = await db
+      .select()
+      .from(assets)
+      .where(and(eq(assets.id, id), eq(assets.userId, userId)));
+    if (!asset) return c.json({ message: "Asset not found" }, 404);
+
+    // External freeze — failures are surfaced as 502.
+    let freezeResult;
+    try {
+      freezeResult = await freezeAsset(
+        c.env,
+        asset.chittyId ?? asset.id,
+        asset,
+      );
+    } catch (err) {
+      if (err instanceof MintClientError) {
+        return c.json(
+          {
+            error: "mint_unavailable",
+            message: err.message,
+            upstream_status: err.status,
+          },
+          502,
+        );
+      }
+      throw err;
+    }
+
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(assets)
+        .set({
+          chittyChainStatus: "frozen",
+          ipfsHash: freezeResult.ipfsHash ?? null,
+          freezeTimestamp: freezeResult.freezeTimestamp
+            ? new Date(freezeResult.freezeTimestamp)
+            : new Date(),
+          updatedAt: new Date(),
+        })
+        .where(and(eq(assets.id, id), eq(assets.userId, userId)))
+        .returning();
+      if (!row) return null;
+      await tx.insert(timelineEvents).values({
+        assetId: row.id,
+        userId,
+        eventType: "other",
+        title: "Asset frozen on ChittyChain",
+        description: "7-day immutability period started",
+        eventDate: new Date(),
+      });
+      return row;
+    });
+
+    if (!updated) return c.json({ message: "Asset not found" }, 404);
+    return c.json(updated);
+  });
+
+  // -----------------------------------------------------------------
+  // POST /api/assets/:id/mint — Phase 3c
+  // Mirrors Express server/routes.ts:166. Gate: chittyChainStatus === 'frozen'
+  // (matches Express; the "7 days elapsed" check is aspirational and NOT in
+  // Express today). Calls ChittyMint mint endpoint, updates asset row.
+  //
+  // NOTE: This endpoint mints an evidence TOKEN, not the ChittyID itself.
+  // Phase 3a's chitty_id=NULL deferral is NOT resolved here — see PR body.
+  // -----------------------------------------------------------------
+  app.post("/assets/:id/mint", authMiddleware, async (c) => {
+    const claims = c.get("claims");
+    const userId = claims.chitty_id;
+    const { id } = c.req.param();
+
+    if (!isValidId(id)) {
+      return c.json(
+        { error: "invalid_id", message: "Asset ID must be a valid UUID" },
+        400,
+      );
+    }
+
+    const db = getDb(c.env.CHITTYASSETS_DB.connectionString);
+    const [asset] = await db
+      .select()
+      .from(assets)
+      .where(and(eq(assets.id, id), eq(assets.userId, userId)));
+    if (!asset) return c.json({ message: "Asset not found" }, 404);
+
+    if (asset.chittyChainStatus !== "frozen") {
+      return c.json(
+        {
+          error: "invalid_state",
+          message: "Asset must be frozen before minting",
+          current_status: asset.chittyChainStatus,
+        },
+        400,
+      );
+    }
+
+    let mintResult;
+    try {
+      mintResult = await mintAssetToken(
+        c.env,
+        asset.chittyId ?? asset.id,
+        asset.ipfsHash ?? "placeholder",
+      );
+    } catch (err) {
+      if (err instanceof MintClientError) {
+        return c.json(
+          {
+            error: "mint_unavailable",
+            message: err.message,
+            upstream_status: err.status,
+          },
+          502,
+        );
+      }
+      throw err;
+    }
+
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(assets)
+        .set({
+          chittyChainStatus: "minted",
+          blockchainHash: mintResult.transactionHash ?? null,
+          mintingFee: "0.1",
+          updatedAt: new Date(),
+        })
+        .where(and(eq(assets.id, id), eq(assets.userId, userId)))
+        .returning();
+      if (!row) return null;
+      await tx.insert(timelineEvents).values({
+        assetId: row.id,
+        userId,
+        eventType: "other",
+        title: "Evidence token minted",
+        description: "Asset ownership token created on ChittyChain",
+        eventDate: new Date(),
+      });
+      return row;
+    });
+
+    if (!updated) return c.json({ message: "Asset not found" }, 404);
+    return c.json(updated);
+  });
+
+  // -----------------------------------------------------------------
+  // POST /api/assets/:assetId/calculate-trust-score — Phase 3c
+  // Mirrors Express server/routes.ts:596. Express delegates to
+  // aiAnalysisService.calculateTrustScore which calls OpenAI (NOT
+  // ChittyTrust — divergence from the migration spec, preserved to match
+  // Express semantics verbatim).
+  //
+  // assets.trust_score column is numeric(3,1) — max representable is 99.9.
+  // The OpenAI response is clamped to [0, 99.9] before UPDATE.
+  // -----------------------------------------------------------------
+  app.post("/assets/:assetId/calculate-trust-score", authMiddleware, async (c) => {
+    const claims = c.get("claims");
+    const userId = claims.chitty_id;
+    const { assetId } = c.req.param();
+
+    if (!isValidId(assetId)) {
+      return c.json(
+        { error: "invalid_id", message: "Asset ID must be a valid UUID" },
+        400,
+      );
+    }
+
+    const db = getDb(c.env.CHITTYASSETS_DB.connectionString);
+    const [asset] = await db
+      .select()
+      .from(assets)
+      .where(and(eq(assets.id, assetId), eq(assets.userId, userId)));
+    if (!asset) return c.json({ message: "Asset not found" }, 404);
+
+    const evidenceRows = await db
+      .select()
+      .from(evidence)
+      .where(
+        and(eq(evidence.assetId, assetId), eq(evidence.userId, userId)),
+      );
+
+    let result;
+    try {
+      result = await calculateTrustScore(c.env, asset, evidenceRows);
+    } catch (err) {
+      if (err instanceof OpenAIConfigError) {
+        return c.json(
+          {
+            error: "service_unavailable",
+            message: "OPENAI_API_KEY not configured",
+          },
+          503,
+        );
+      }
+      if (err instanceof OpenAIClientError) {
+        return c.json(
+          {
+            error: "openai_unavailable",
+            message: err.message,
+            upstream_status: err.status,
+          },
+          502,
+        );
+      }
+      throw err;
+    }
+
+    // numeric(3,1) max is 99.9; clamp to keep INSERT/UPDATE valid.
+    const clamped = Math.min(99.9, Math.max(0, result.trustScore));
+    await db
+      .update(assets)
+      .set({ trustScore: clamped.toFixed(1), updatedAt: new Date() })
+      .where(and(eq(assets.id, assetId), eq(assets.userId, userId)));
+
+    return c.json({ trustScore: clamped, factors: result.factors });
   });
 }
 
