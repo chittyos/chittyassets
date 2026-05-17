@@ -33,8 +33,11 @@ export interface Env {
 
   // Phase 2+ bindings (active):
   CHITTYASSETS_DB: Hyperdrive;
-  // EVIDENCE: R2Bucket;
-  // PROCESSED: R2Bucket;
+  // Phase 4 — R2 object storage. EVIDENCE holds user-uploaded artifacts
+  // served via GET /objects/:key; PROCESSED is reserved for server-written
+  // derivatives (not user-served in Phase 4).
+  EVIDENCE: R2Bucket;
+  PROCESSED: R2Bucket;
   // CHITTYCONNECT: Fetcher;
 }
 
