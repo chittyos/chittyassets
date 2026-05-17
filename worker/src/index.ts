@@ -38,6 +38,7 @@ import { evidenceLedgerRoutes } from "./routes/evidence-ledger";
 import { ecosystemRoutes } from "./routes/ecosystem";
 import { evidenceRoutes } from "./routes/evidence";
 import { seedRoutes } from "./routes/seed";
+import { objectApiRoutes, objectRootRoutes } from "./routes/objects";
 
 type Variables = { claims: ChittyAuthClaims };
 
@@ -84,7 +85,7 @@ app.get("/api/v1/status", (c) =>
     canonical_uri: "chittycanon://core/services/chittyassets",
     version: "1.0.0",
     environment: c.env.ENVIRONMENT,
-    migration_status: "PHASE_3C_HEAVY_WRITES",
+    migration_status: "PHASE_4_R2_ROUTES",
     migrated_routes: [
       "GET /api/assets",
       "GET /api/assets/stats",
@@ -113,6 +114,10 @@ app.get("/api/v1/status", (c) =>
       "POST /api/evidence-ledger/submit",
       "POST /api/evidence-ledger/:chittyId/verify",
       "POST /api/seed-demo",
+      "GET /objects/:key",
+      "POST /api/objects/upload",
+      "PUT /api/objects/upload/:token",
+      "PUT /api/evidence-files",
     ],
     entity_types_handled: [...ENTITY_TYPES],
     dependencies: {
@@ -145,6 +150,10 @@ app.route("/api", evidenceLedgerRoutes);
 app.route("/api", ecosystemRoutes);
 app.route("/api", evidenceRoutes);
 app.route("/api", seedRoutes);
+app.route("/api", objectApiRoutes);
+
+// Phase 4 — root-mounted object fetch route (NOT under /api).
+app.route("/", objectRootRoutes);
 
 // Unmigrated routes return 501 unconditionally — no auth oracle.
 app.all("/api/*", (c) =>

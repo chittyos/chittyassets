@@ -54,11 +54,13 @@
         "binding": "ASSETS",
         "not_found_handling": "single-page-application"
       }
-      // Phase 4 bindings:
-      // "r2_buckets": [
-      //   { "binding": "EVIDENCE",  "bucket_name": "chittyassets-evidence" },
-      //   { "binding": "PROCESSED", "bucket_name": "chittyassets-processed" }
-      // ],
+      ,
+      "r2_buckets": [
+        { "binding": "EVIDENCE",  "bucket_name": "chittyassets-evidence" },
+        { "binding": "PROCESSED", "bucket_name": "chittyassets-processed" }
+      ]
+      // CHITTYCONNECT service binding deferred — Phase 4 upload path is
+      // Worker-proxied and does not require ChittyConnect.
       // "services": [{ "binding": "CHITTYCONNECT", "service": "chittyconnect" }]
     }
   },
