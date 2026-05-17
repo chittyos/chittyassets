@@ -24,12 +24,20 @@ import { z } from "zod";
 import {
   assets,
   evidence,
+  aiAnalysisResults,
   timelineEvents,
   insertEvidenceSchema,
 } from "@shared/schema";
 import { requireChittyAuth } from "../auth";
 import { getDb } from "../db";
 import type { Env, ChittyAuthClaims } from "../env";
+import {
+  analyzeReceipt,
+  analyzeDocument,
+  analyzeAssetPhoto,
+  OpenAIClientError,
+  OpenAIConfigError,
+} from "../clients/openai";
 
 type Variables = { claims: ChittyAuthClaims };
 type AppType = { Bindings: Env; Variables: Variables };
@@ -135,6 +143,144 @@ export function registerEvidenceRoutes(
       return c.json({ message: "Asset not found" }, 404);
     }
     return c.json(result.evidence, 201);
+  });
+
+  // -----------------------------------------------------------------
+  // POST /api/evidence/:evidenceId/analyze — Phase 3c
+  // Mirrors Express server/routes.ts:379. Routes to OpenAI gpt-4o based on
+  // analysisType ('receipt' | 'document' | 'asset_valuation'). Stores result
+  // in ai_analysis_results (Event E) and updates evidence row with the
+  // analysis JSON + verificationStatus.
+  // -----------------------------------------------------------------
+  app.post("/evidence/:evidenceId/analyze", authMiddleware, async (c) => {
+    const claims = c.get("claims");
+    const userId = claims.chitty_id;
+    const { evidenceId } = c.req.param();
+
+    if (!isValidId(evidenceId)) {
+      return c.json(
+        { error: "invalid_id", message: "Evidence ID must be a valid UUID" },
+        400,
+      );
+    }
+
+    let body: any;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        { error: "invalid_json", message: "Request body must be valid JSON" },
+        400,
+      );
+    }
+
+    const { base64Image, analysisType } = body ?? {};
+    if (!base64Image || !analysisType) {
+      return c.json(
+        {
+          error: "invalid_input",
+          message: "base64Image and analysisType are required",
+        },
+        400,
+      );
+    }
+    if (
+      analysisType !== "receipt" &&
+      analysisType !== "document" &&
+      analysisType !== "asset_valuation"
+    ) {
+      return c.json(
+        { error: "invalid_input", message: "Invalid analysis type" },
+        400,
+      );
+    }
+
+    const db = getDb(c.env.CHITTYASSETS_DB.connectionString);
+
+    // Ownership check — evidence must belong to caller.
+    const [evidenceItem] = await db
+      .select()
+      .from(evidence)
+      .where(and(eq(evidence.id, evidenceId), eq(evidence.userId, userId)));
+    if (!evidenceItem) {
+      return c.json({ message: "Evidence not found" }, 404);
+    }
+
+    const startTime = Date.now();
+    let results: any;
+    let confidence = 0;
+    try {
+      if (analysisType === "receipt") {
+        results = await analyzeReceipt(c.env, base64Image);
+      } else if (analysisType === "document") {
+        results = await analyzeDocument(c.env, base64Image);
+      } else {
+        const [asset] = await db
+          .select()
+          .from(assets)
+          .where(
+            and(
+              eq(assets.id, evidenceItem.assetId),
+              eq(assets.userId, userId),
+            ),
+          );
+        results = await analyzeAssetPhoto(
+          c.env,
+          base64Image,
+          asset?.assetType ?? "unknown",
+        );
+      }
+      confidence = typeof results?.confidence === "number" ? results.confidence : 0;
+    } catch (err) {
+      if (err instanceof OpenAIConfigError) {
+        return c.json(
+          {
+            error: "service_unavailable",
+            message: "OPENAI_API_KEY not configured",
+          },
+          503,
+        );
+      }
+      if (err instanceof OpenAIClientError) {
+        return c.json(
+          {
+            error: "openai_unavailable",
+            message: err.message,
+            upstream_status: err.status,
+          },
+          502,
+        );
+      }
+      throw err;
+    }
+    const processingTime = Date.now() - startTime;
+    // ai_analysis_results.confidence is numeric(3,2) — max 9.99, range 0..1.
+    const confidenceStr = Math.max(0, Math.min(1, confidence)).toFixed(2);
+
+    const inserted = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(aiAnalysisResults)
+        .values({
+          evidenceId,
+          analysisType,
+          confidence: confidenceStr,
+          results,
+          processingTime,
+          modelUsed: "gpt-4o",
+        })
+        .returning();
+      await tx
+        .update(evidence)
+        .set({
+          aiAnalysis: results,
+          verificationStatus: confidence > 0.8 ? "verified" : "pending",
+          updatedAt: new Date(),
+        })
+        .where(and(eq(evidence.id, evidenceId), eq(evidence.userId, userId)));
+      return row;
+    });
+
+    return c.json(inserted);
   });
 }
 

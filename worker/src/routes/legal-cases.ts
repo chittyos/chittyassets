@@ -16,15 +16,30 @@
 
 import { Hono } from "hono";
 import type { MiddlewareHandler } from "hono";
-import { eq, desc } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
 import {
   legalCases,
+  assets,
+  evidence,
+  timelineEvents,
   insertLegalCaseSchema,
 } from "@shared/schema";
 import { requireChittyAuth } from "../auth";
 import { getDb } from "../db";
 import type { Env, ChittyAuthClaims } from "../env";
+import {
+  generateLegalDocument,
+  OpenAIClientError,
+  OpenAIConfigError,
+} from "../clients/openai";
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isValidId(id: string): boolean {
+  return UUID_RE.test(id);
+}
 
 type Variables = { claims: ChittyAuthClaims };
 type AppType = { Bindings: Env; Variables: Variables };
@@ -112,6 +127,120 @@ export function registerLegalCaseRoutes(
       .returning();
 
     return c.json(inserted, 201);
+  });
+
+  // -----------------------------------------------------------------
+  // POST /api/legal/generate-document — Phase 3c
+  // Mirrors Express server/routes.ts:557. Builds a documentData payload
+  // from the asset + top-5 evidence + recent-10 timeline events, then asks
+  // OpenAI gpt-4o to generate a court-ready document for the given
+  // jurisdiction (default 'New York State').
+  // -----------------------------------------------------------------
+  app.post("/legal/generate-document", authMiddleware, async (c) => {
+    const claims = c.get("claims");
+    const userId = claims.chitty_id;
+
+    let body: any;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        { error: "invalid_json", message: "Request body must be valid JSON" },
+        400,
+      );
+    }
+    const {
+      templateType,
+      assetId,
+      jurisdiction,
+      includeNotarization,
+      includeBlockchain,
+    } = body ?? {};
+    if (!templateType || !assetId) {
+      return c.json(
+        {
+          error: "invalid_input",
+          message: "templateType and assetId are required",
+        },
+        400,
+      );
+    }
+    if (!isValidId(assetId)) {
+      return c.json(
+        { error: "invalid_id", message: "Asset ID must be a valid UUID" },
+        400,
+      );
+    }
+
+    const db = getDb(c.env.CHITTYASSETS_DB.connectionString);
+    const [asset] = await db
+      .select()
+      .from(assets)
+      .where(and(eq(assets.id, assetId), eq(assets.userId, userId)));
+    if (!asset) return c.json({ message: "Asset not found" }, 404);
+
+    const evidenceRows = await db
+      .select()
+      .from(evidence)
+      .where(and(eq(evidence.assetId, assetId), eq(evidence.userId, userId)))
+      .orderBy(desc(evidence.createdAt))
+      .limit(5);
+    const timelineRows = await db
+      .select()
+      .from(timelineEvents)
+      .where(
+        and(
+          eq(timelineEvents.assetId, assetId),
+          eq(timelineEvents.userId, userId),
+        ),
+      )
+      .orderBy(desc(timelineEvents.eventDate))
+      .limit(10);
+
+    const documentData = {
+      asset,
+      evidence: evidenceRows,
+      timeline: timelineRows,
+      includeNotarization: Boolean(includeNotarization),
+      includeBlockchain: Boolean(includeBlockchain),
+    };
+
+    let document: string;
+    try {
+      document = await generateLegalDocument(
+        c.env,
+        String(templateType),
+        documentData,
+        String(jurisdiction ?? "New York State"),
+      );
+    } catch (err) {
+      if (err instanceof OpenAIConfigError) {
+        return c.json(
+          {
+            error: "service_unavailable",
+            message: "OPENAI_API_KEY not configured",
+          },
+          503,
+        );
+      }
+      if (err instanceof OpenAIClientError) {
+        return c.json(
+          {
+            error: "openai_unavailable",
+            message: err.message,
+            upstream_status: err.status,
+          },
+          502,
+        );
+      }
+      throw err;
+    }
+
+    return c.json({
+      document,
+      templateType,
+      jurisdiction: jurisdiction ?? "New York State",
+    });
   });
 }
 
