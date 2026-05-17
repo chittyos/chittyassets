@@ -3,6 +3,9 @@
 // Phase 2a: asset read routes ported (GET /api/assets, /api/assets/stats,
 //           /api/assets/:id, /api/assets/:assetId/evidence,
 //           /api/assets/:assetId/timeline).
+// Phase 2b: simple owner-scoped reads ported
+//   (GET /api/assets/:assetId/warranties, /api/warranties/expiring,
+//    /api/assets/:assetId/insurance, /api/legal-cases, /api/tools/resources).
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -10,6 +13,10 @@ import { logger } from "hono/logger";
 import { ENTITY_TYPES, type ChittyAuthClaims, type Env } from "./env";
 import { requireChittyAuth } from "./auth";
 import { assetRoutes } from "./routes/assets";
+import { warrantyRoutes } from "./routes/warranties";
+import { insuranceRoutes } from "./routes/insurance";
+import { legalCaseRoutes } from "./routes/legal-cases";
+import { toolRoutes } from "./routes/tools";
 
 type Variables = { claims: ChittyAuthClaims };
 
@@ -56,13 +63,18 @@ app.get("/api/v1/status", (c) =>
     canonical_uri: "chittycanon://core/services/chittyassets",
     version: "1.0.0",
     environment: c.env.ENVIRONMENT,
-    migration_status: "PHASE_2A_ASSET_READS",
+    migration_status: "PHASE_2B_SIMPLE_READS",
     migrated_routes: [
       "GET /api/assets",
       "GET /api/assets/stats",
       "GET /api/assets/:id",
       "GET /api/assets/:assetId/evidence",
       "GET /api/assets/:assetId/timeline",
+      "GET /api/assets/:assetId/warranties",
+      "GET /api/warranties/expiring",
+      "GET /api/assets/:assetId/insurance",
+      "GET /api/legal-cases",
+      "GET /api/tools/resources",
     ],
     entity_types_handled: [...ENTITY_TYPES],
     dependencies: {
@@ -85,8 +97,12 @@ app.get("/api/auth/user", requireChittyAuth, (c) => {
   });
 });
 
-// Phase 2a asset read routes — registered BEFORE the 501 catch-all.
+// Phase 2a/2b read routes — registered BEFORE the 501 catch-all.
 app.route("/api", assetRoutes);
+app.route("/api", warrantyRoutes);
+app.route("/api", insuranceRoutes);
+app.route("/api", legalCaseRoutes);
+app.route("/api", toolRoutes);
 
 // Unmigrated routes return 501 unconditionally — no auth oracle.
 app.all("/api/*", (c) =>
