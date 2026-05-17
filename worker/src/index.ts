@@ -6,6 +6,8 @@
 // Phase 2b: simple owner-scoped reads ported
 //   (GET /api/assets/:assetId/warranties, /api/warranties/expiring,
 //    /api/assets/:assetId/insurance, /api/legal-cases, /api/tools/resources).
+// Phase 2c: external HTTP reads ported
+//   (GET /api/evidence-ledger/:chittyId, GET /api/ecosystem/status).
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -17,6 +19,8 @@ import { warrantyRoutes } from "./routes/warranties";
 import { insuranceRoutes } from "./routes/insurance";
 import { legalCaseRoutes } from "./routes/legal-cases";
 import { toolRoutes } from "./routes/tools";
+import { evidenceLedgerRoutes } from "./routes/evidence-ledger";
+import { ecosystemRoutes } from "./routes/ecosystem";
 
 type Variables = { claims: ChittyAuthClaims };
 
@@ -63,7 +67,7 @@ app.get("/api/v1/status", (c) =>
     canonical_uri: "chittycanon://core/services/chittyassets",
     version: "1.0.0",
     environment: c.env.ENVIRONMENT,
-    migration_status: "PHASE_2B_SIMPLE_READS",
+    migration_status: "PHASE_2C_EXTERNAL_READS",
     migrated_routes: [
       "GET /api/assets",
       "GET /api/assets/stats",
@@ -75,6 +79,8 @@ app.get("/api/v1/status", (c) =>
       "GET /api/assets/:assetId/insurance",
       "GET /api/legal-cases",
       "GET /api/tools/resources",
+      "GET /api/evidence-ledger/:chittyId",
+      "GET /api/ecosystem/status",
     ],
     entity_types_handled: [...ENTITY_TYPES],
     dependencies: {
@@ -97,12 +103,14 @@ app.get("/api/auth/user", requireChittyAuth, (c) => {
   });
 });
 
-// Phase 2a/2b read routes — registered BEFORE the 501 catch-all.
+// Phase 2a/2b/2c read routes — registered BEFORE the 501 catch-all.
 app.route("/api", assetRoutes);
 app.route("/api", warrantyRoutes);
 app.route("/api", insuranceRoutes);
 app.route("/api", legalCaseRoutes);
 app.route("/api", toolRoutes);
+app.route("/api", evidenceLedgerRoutes);
+app.route("/api", ecosystemRoutes);
 
 // Unmigrated routes return 501 unconditionally — no auth oracle.
 app.all("/api/*", (c) =>

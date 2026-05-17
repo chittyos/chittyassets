@@ -18,6 +18,13 @@ export interface Env {
   CHITTYMINT_URL?: string;
   CHITTYCONNECT_URL?: string;
   CHITTYLEDGER_URL?: string;
+  // Phase 2c — ChittyChain ecosystem fan-out (5 services). Defaults applied at
+  // call-site if unset. Each is a base URL with a /health endpoint.
+  CHITTYID_URL?: string;
+  CHITTYASSETS_URL?: string;
+  CHITTYTRUST_URL?: string;
+  CHITTYRESOLUTION_URL?: string;
+  CHITTYFILE_URL?: string;
 
   // Phase 2+ bindings (active):
   CHITTYASSETS_DB: Hyperdrive;
