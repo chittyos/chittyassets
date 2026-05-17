@@ -10,6 +10,10 @@
 //   (GET /api/evidence-ledger/:chittyId, GET /api/ecosystem/status).
 // Phase 3a: asset write routes ported (POST/PUT/DELETE /api/assets[/:id])
 //           and evidence attach (POST /api/assets/:assetId/evidence).
+// Phase 3b: domain write routes ported
+//   (POST /api/assets/:assetId/warranties,
+//    POST /api/assets/:assetId/insurance,
+//    POST /api/legal-cases).
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -70,7 +74,7 @@ app.get("/api/v1/status", (c) =>
     canonical_uri: "chittycanon://core/services/chittyassets",
     version: "1.0.0",
     environment: c.env.ENVIRONMENT,
-    migration_status: "PHASE_3A_ASSET_WRITES",
+    migration_status: "PHASE_3B_DOMAIN_WRITES",
     migrated_routes: [
       "GET /api/assets",
       "GET /api/assets/stats",
@@ -88,6 +92,9 @@ app.get("/api/v1/status", (c) =>
       "PUT /api/assets/:id",
       "DELETE /api/assets/:id",
       "POST /api/assets/:assetId/evidence",
+      "POST /api/assets/:assetId/warranties",
+      "POST /api/assets/:assetId/insurance",
+      "POST /api/legal-cases",
     ],
     entity_types_handled: [...ENTITY_TYPES],
     dependencies: {
