@@ -1,22 +1,31 @@
 // @canon: chittycanon://core/services/chittyassets
-// Warranty read routes — Phase 2b of Express→Hono migration.
+// Warranty routes — Phase 2b reads + Phase 3b writes of Express→Hono migration.
 //
-// Routes ported (GET only — read-only):
-//   GET /api/assets/:assetId/warranties   server/routes.ts:453
-//   GET /api/warranties/expiring          server/routes.ts:464
+// Routes:
+//   GET  /api/assets/:assetId/warranties   server/routes.ts:453  (Phase 2b)
+//   GET  /api/warranties/expiring          server/routes.ts:464  (Phase 2b)
+//   POST /api/assets/:assetId/warranties   server/routes.ts:476  (Phase 3b)
 //
 // Per chittycanon://gov/governance#core-types — warranties are Thing (T)
 // artifacts bound to a Person (P) owner via user_id (canonical chitty_id).
 // All five entity types P/L/T/E/A remain enumerated in env.ts; this module
 // touches Person (owner) + Thing (warranty contract).
 //
-// Ownership: warranties.userId === claims.chitty_id (direct, no JOIN needed —
-// warranties.user_id is denormalized on insert by the writer side).
+// Ownership: warranties.userId === claims.chitty_id. For writes, parent asset
+// ownership is verified inside the same transaction (SELECT-then-INSERT)
+// before the warranty row is inserted — mirrors the Phase 3a evidence pattern.
+// Express version emits no timeline_events for warranty creates; we preserve
+// that behavior here (no side effects beyond the INSERT).
 
 import { Hono } from "hono";
 import type { MiddlewareHandler } from "hono";
 import { and, eq, gte, lte, desc } from "drizzle-orm";
-import { warranties } from "@shared/schema";
+import { z } from "zod";
+import {
+  assets,
+  warranties,
+  insertWarrantySchema,
+} from "@shared/schema";
 import { requireChittyAuth } from "../auth";
 import { getDb } from "../db";
 import type { Env, ChittyAuthClaims } from "../env";
@@ -31,8 +40,37 @@ function isValidId(id: string): boolean {
   return UUID_RE.test(id);
 }
 
+// Server-controlled: client cannot set userId, assetId (from URL), or chittyId.
+const WARRANTY_SERVER_OWNED = {
+  userId: true,
+  assetId: true,
+  chittyId: true,
+} as const;
+
+// Drizzle-zod emits z.date() for timestamp columns; JSON bodies carry ISO
+// strings, so we extend with coercive date fields. Express's body-parser path
+// is more forgiving; we make it explicit here.
+const createWarrantyInputSchema = insertWarrantySchema
+  .omit(WARRANTY_SERVER_OWNED)
+  .extend({
+    startDate: z.coerce.date(),
+    endDate: z.coerce.date(),
+  });
+
+function formatZodError(err: z.ZodError) {
+  return {
+    error: "invalid_input",
+    message: "Request body failed validation",
+    errors: err.errors.map((e) => ({
+      path: e.path.join("."),
+      message: e.message,
+      code: e.code,
+    })),
+  };
+}
+
 /**
- * Register warranty read routes on the given Hono app.
+ * Register warranty routes on the given Hono app.
  * Accepts an auth middleware so integration tests can inject claims directly.
  */
 export function registerWarrantyRoutes(
@@ -99,6 +137,63 @@ export function registerWarrantyRoutes(
       .orderBy(desc(warranties.endDate));
 
     return c.json(rows);
+  });
+
+  // -----------------------------------------------------------------
+  // POST /api/assets/:assetId/warranties — attach warranty to an asset.
+  // Mirrors Express server/routes.ts:476.
+  //
+  // 400 on bad UUID or invalid body. 404 if asset not owned. 201 on success.
+  // Ownership check inside transaction prevents toctou races and existence
+  // leaks (404 looks identical to "asset doesn't exist").
+  // -----------------------------------------------------------------
+  app.post("/assets/:assetId/warranties", authMiddleware, async (c) => {
+    const claims = c.get("claims");
+    const userId = claims.chitty_id;
+    const { assetId } = c.req.param();
+
+    if (!isValidId(assetId)) {
+      return c.json(
+        { error: "invalid_id", message: "Asset ID must be a valid UUID" },
+        400,
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        { error: "invalid_json", message: "Request body must be valid JSON" },
+        400,
+      );
+    }
+
+    const parsed = createWarrantyInputSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json(formatZodError(parsed.error), 400);
+    }
+
+    const db = getDb(c.env.CHITTYASSETS_DB.connectionString);
+    const result = await db.transaction(async (tx) => {
+      const [owned] = await tx
+        .select({ id: assets.id })
+        .from(assets)
+        .where(and(eq(assets.id, assetId), eq(assets.userId, userId)));
+      if (!owned) return { notFound: true as const };
+
+      const [inserted] = await tx
+        .insert(warranties)
+        .values({ ...parsed.data, assetId, userId })
+        .returning();
+
+      return { notFound: false as const, warranty: inserted };
+    });
+
+    if (result.notFound) {
+      return c.json({ message: "Asset not found" }, 404);
+    }
+    return c.json(result.warranty, 201);
   });
 }
 
