@@ -8,6 +8,8 @@
 //    /api/assets/:assetId/insurance, /api/legal-cases, /api/tools/resources).
 // Phase 2c: external HTTP reads ported
 //   (GET /api/evidence-ledger/:chittyId, GET /api/ecosystem/status).
+// Phase 3a: asset write routes ported (POST/PUT/DELETE /api/assets[/:id])
+//           and evidence attach (POST /api/assets/:assetId/evidence).
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -21,6 +23,7 @@ import { legalCaseRoutes } from "./routes/legal-cases";
 import { toolRoutes } from "./routes/tools";
 import { evidenceLedgerRoutes } from "./routes/evidence-ledger";
 import { ecosystemRoutes } from "./routes/ecosystem";
+import { evidenceRoutes } from "./routes/evidence";
 
 type Variables = { claims: ChittyAuthClaims };
 
@@ -67,7 +70,7 @@ app.get("/api/v1/status", (c) =>
     canonical_uri: "chittycanon://core/services/chittyassets",
     version: "1.0.0",
     environment: c.env.ENVIRONMENT,
-    migration_status: "PHASE_2C_EXTERNAL_READS",
+    migration_status: "PHASE_3A_ASSET_WRITES",
     migrated_routes: [
       "GET /api/assets",
       "GET /api/assets/stats",
@@ -81,6 +84,10 @@ app.get("/api/v1/status", (c) =>
       "GET /api/tools/resources",
       "GET /api/evidence-ledger/:chittyId",
       "GET /api/ecosystem/status",
+      "POST /api/assets",
+      "PUT /api/assets/:id",
+      "DELETE /api/assets/:id",
+      "POST /api/assets/:assetId/evidence",
     ],
     entity_types_handled: [...ENTITY_TYPES],
     dependencies: {
@@ -111,6 +118,7 @@ app.route("/api", legalCaseRoutes);
 app.route("/api", toolRoutes);
 app.route("/api", evidenceLedgerRoutes);
 app.route("/api", ecosystemRoutes);
+app.route("/api", evidenceRoutes);
 
 // Unmigrated routes return 501 unconditionally — no auth oracle.
 app.all("/api/*", (c) =>

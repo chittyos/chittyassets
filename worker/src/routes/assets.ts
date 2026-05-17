@@ -21,10 +21,53 @@
 import { Hono } from "hono";
 import type { MiddlewareHandler } from "hono";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
-import { assets, evidence, timelineEvents } from "@shared/schema";
+import { z } from "zod";
+import {
+  assets,
+  evidence,
+  timelineEvents,
+  insertAssetSchema,
+} from "@shared/schema";
 import { requireChittyAuth } from "../auth";
 import { getDb } from "../db";
 import type { Env, ChittyAuthClaims } from "../env";
+
+// -----------------------------------------------------------------
+// Input validation schemas — server-controlled fields are stripped.
+// Security boundary: client CANNOT set userId, chittyId, trustScore,
+// blockchain state, or verification flags. Those are server-owned.
+// @canon: chittycanon://core/services/chittyassets
+// -----------------------------------------------------------------
+const SERVER_OWNED = {
+  userId: true,
+  chittyId: true,
+  chittyIdV2: true,
+  trustScore: true,
+  blockchainHash: true,
+  blockNumber: true,
+  ipfsHash: true,
+  freezeTimestamp: true,
+  settlementTimestamp: true,
+  mintingFee: true,
+  verificationStatus: true,
+  chittyChainStatus: true,
+  deletedAt: true,
+} as const;
+
+const createAssetInputSchema = insertAssetSchema.omit(SERVER_OWNED);
+const updateAssetInputSchema = createAssetInputSchema.partial();
+
+function formatZodError(err: z.ZodError) {
+  return {
+    error: "invalid_input",
+    message: "Request body failed validation",
+    errors: err.errors.map((e) => ({
+      path: e.path.join("."),
+      message: e.message,
+      code: e.code,
+    })),
+  };
+}
 
 type Variables = { claims: ChittyAuthClaims };
 type AppType = { Bindings: Env; Variables: Variables };
@@ -221,6 +264,161 @@ export function registerAssetRoutes(
       .orderBy(desc(timelineEvents.eventDate));
 
     return c.json(rows);
+  });
+
+  // -----------------------------------------------------------------
+  // POST /api/assets — create asset (Phase 3a write)
+  // Mirrors Express server/routes.ts:259
+  //
+  // Server-controlled fields (userId, chittyId, trustScore, chain state) are
+  // injected — client cannot override. ChittyID minting + trust calc are
+  // DEFERRED to an async minter pass (documented divergence from Express);
+  // here we leave chittyId NULL and trustScore at schema default '0.0'.
+  //
+  // Side effect: append timeline_events row (event_type='acquisition') in
+  // the same DB transaction as the asset INSERT.
+  // -----------------------------------------------------------------
+  app.post("/assets", authMiddleware, async (c) => {
+    const claims = c.get("claims");
+    const userId = claims.chitty_id;
+
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        { error: "invalid_json", message: "Request body must be valid JSON" },
+        400,
+      );
+    }
+
+    const parsed = createAssetInputSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json(formatZodError(parsed.error), 400);
+    }
+
+    const db = getDb(c.env.CHITTYASSETS_DB.connectionString);
+    const inserted = await db.transaction(async (tx) => {
+      const [asset] = await tx
+        .insert(assets)
+        .values({ ...parsed.data, userId })
+        .returning();
+
+      await tx.insert(timelineEvents).values({
+        assetId: asset.id,
+        userId,
+        eventType: "acquisition",
+        title: `Asset "${asset.name}" added to portfolio`,
+        description:
+          "Initial asset registration (chittyId minting deferred to async pass)",
+        eventDate: new Date(),
+      });
+
+      return asset;
+    });
+
+    return c.json(inserted, 201);
+  });
+
+  // -----------------------------------------------------------------
+  // PUT /api/assets/:id — update asset (ownership-checked)
+  // Mirrors Express server/routes.ts:306
+  //
+  // Ownership enforced via UPDATE ... WHERE id=? AND user_id=? RETURNING *.
+  // 0 rows returned → 404 (not 403 — no existence leak).
+  // Server-owned fields cannot be overwritten by client.
+  // -----------------------------------------------------------------
+  app.put("/assets/:id", authMiddleware, async (c) => {
+    const claims = c.get("claims");
+    const userId = claims.chitty_id;
+    const { id } = c.req.param();
+
+    if (!isValidId(id)) {
+      return c.json(
+        { error: "invalid_id", message: "Asset ID must be a valid UUID" },
+        400,
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        { error: "invalid_json", message: "Request body must be valid JSON" },
+        400,
+      );
+    }
+
+    const parsed = updateAssetInputSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json(formatZodError(parsed.error), 400);
+    }
+
+    const db = getDb(c.env.CHITTYASSETS_DB.connectionString);
+    const [updated] = await db
+      .update(assets)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(and(eq(assets.id, id), eq(assets.userId, userId)))
+      .returning();
+
+    if (!updated) {
+      return c.json({ message: "Asset not found" }, 404);
+    }
+    return c.json(updated);
+  });
+
+  // -----------------------------------------------------------------
+  // DELETE /api/assets/:id — delete asset (ownership-checked)
+  // Mirrors Express server/routes.ts:323
+  //
+  // Returns 204 on success, 404 if not owned/not-found. Hard delete to
+  // match Express semantics; soft-delete (deleted_at) is a future change.
+  // -----------------------------------------------------------------
+  app.delete("/assets/:id", authMiddleware, async (c) => {
+    const claims = c.get("claims");
+    const userId = claims.chitty_id;
+    const { id } = c.req.param();
+
+    if (!isValidId(id)) {
+      return c.json(
+        { error: "invalid_id", message: "Asset ID must be a valid UUID" },
+        400,
+      );
+    }
+
+    const db = getDb(c.env.CHITTYASSETS_DB.connectionString);
+    // Cascade: timeline_events and evidence FK assets.id. Delete dependents
+    // first within a transaction to avoid FK violation.
+    const deleted = await db.transaction(async (tx) => {
+      const [owned] = await tx
+        .select({ id: assets.id })
+        .from(assets)
+        .where(and(eq(assets.id, id), eq(assets.userId, userId)));
+      if (!owned) return null;
+
+      await tx
+        .delete(timelineEvents)
+        .where(
+          and(
+            eq(timelineEvents.assetId, id),
+            eq(timelineEvents.userId, userId),
+          ),
+        );
+      await tx
+        .delete(evidence)
+        .where(and(eq(evidence.assetId, id), eq(evidence.userId, userId)));
+      const [row] = await tx
+        .delete(assets)
+        .where(and(eq(assets.id, id), eq(assets.userId, userId)))
+        .returning({ id: assets.id });
+      return row ?? null;
+    });
+
+    if (!deleted) {
+      return c.json({ message: "Asset not found" }, 404);
+    }
+    return c.body(null, 204);
   });
 }
 
