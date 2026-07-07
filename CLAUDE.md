@@ -1,6 +1,24 @@
 # CLAUDE.md
 
+<!-- @canon: chittycanon://core/services/chittyassets -->
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Migration status (2026-05-16)
+
+ChittyAssets is in active Express → Cloudflare Workers (Hono) migration. See
+[docs/migrations/ROADMAP.md](docs/migrations/ROADMAP.md) for phase index and
+status of in-flight PRs.
+
+- **Tier**: 4 (Domain) — `chittycanon://core/services/chittyassets`
+- **Entity types handled**: P, L, T, E, A (all five P/L/T/E/A — Authority included)
+- **Auth**: ChittyAuth (JWKS) — Replit Auth listed below is the legacy stack
+  being replaced
+- **DB binding (Worker)**: Hyperdrive `CHITTYASSETS_DB`
+- **File storage**: GCS → R2 (cutover in Phase 4); ACL via `r2_object_acl` table
+
+While migration is in flight, both runtimes coexist: Express serves prod traffic
+until Phase 4 lands and the Cloudflare route flips to the Worker.
 
 ## Commands
 
