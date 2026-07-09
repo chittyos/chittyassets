@@ -145,7 +145,7 @@ Track asset access and usage patterns.
 ```bash
 # Build for Cloudflare
 npm run build:cloudflare
-cf deploy
+wrangler deploy
 ```
 
 ### Vercel

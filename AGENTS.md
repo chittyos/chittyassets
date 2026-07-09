@@ -26,12 +26,12 @@ npm run check        # TypeScript type checking (client + server)
 
 Secrets are managed via chittysecrets — never hardcode:
 ```bash
-chittysecrets run --env-file=.env.chittyos -- npm run dev
+op run --env-file=.env.chittyos -- npm run dev
 ```
 
 Deploy to Cloudflare:
 ```bash
-npx cf deploy --env production
+npx wrangler deploy --env production
 curl -s https://chittyassets-api-prod.workers.dev/health | jq .
 ```
 
@@ -155,7 +155,7 @@ For Neon-backed tests: use the `steep-cloud-28172078` project on a dev branch. N
 
 ## Security Rules for Agents
 
-1. Do not commit secrets, API keys, or DB connection strings. All secrets via chittysecrets (`chittysecrets run`).
+1. Do not commit secrets, API keys, or DB connection strings. All secrets via chittysecrets (`op run`).
 2. Do not add a GCS streaming route without ACL enforcement via `objectStorage.ts`.
 3. Do not modify `timelineEvents` records — this table is append-only.
 4. Do not bypass `requireChittyAuth()` middleware on any route.

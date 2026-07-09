@@ -27,7 +27,7 @@ wrangler pages deploy dist/public --project-name chittyassets --compatibility-da
 
 # Deploy backend API as Cloudflare Worker
 echo "⚡ Deploying backend API as Cloudflare Worker..."
-cf deploy --name chittyassets-api
+wrangler deploy --name chittyassets-api
 
 echo "✅ Deployment complete!"
 echo "Frontend: https://chittyassets.pages.dev"

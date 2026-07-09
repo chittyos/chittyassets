@@ -28,7 +28,7 @@
     "dev:web": "vite",
     "build": "vite build",
     "check": "tsc",
-    "deploy": "cf deploy --env production",
+    "deploy": "wrangler deploy --env production",
     "db:push": "drizzle-kit push",
     "install-github-app": "node scripts/install-github-app.js",
     "test:github-app": "node scripts/test-github-app.js",

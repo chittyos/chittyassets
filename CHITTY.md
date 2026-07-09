@@ -150,7 +150,7 @@ npm run dev            # Vite + Express hot reload
 npm run build          # Vite frontend + esbuild server bundle
 
 # Deploy to Cloudflare
-npx cf deploy --env production
+npx wrangler deploy --env production
 
 # Health check post-deploy
 curl -s https://chittyassets-api-prod.workers.dev/health | jq .
@@ -161,7 +161,7 @@ npm run db:push
 
 Secrets are injected via chittysecrets:
 ```bash
-chittysecrets run --env-file=.env.chittyos -- npm run dev
+op run --env-file=.env.chittyos -- npm run dev
 ```
 
 ---
