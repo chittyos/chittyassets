@@ -30,7 +30,7 @@ ChittyAssets is a Tier 4 Domain service. It consumes identity (ChittyID), trust 
 | Frontend | React 18, Vite 7, Wouter, TanStack Query, Radix UI, Tailwind CSS 3 |
 | Backend | Express 4, TypeScript 5.6, Drizzle ORM 0.39 |
 | Database | Neon PostgreSQL (project: `steep-cloud-28172078`, org: Chitty(OS/APPS)Central) |
-| Secret store | 1Password (`op://synthetic-shared/NEON_DB_CHITTYASSETS/credential`) |
+| Secret store | chittysecrets (`op://synthetic-shared/NEON_DB_CHITTYASSETS/credential`) |
 | File storage | Google Cloud Storage (ACL-enforced, private evidence files) |
 | AI | OpenAI GPT-4o (document analysis, valuation, legal document generation) |
 | Auth middleware | ChittyAuth JWT (`auth.chitty.cc`) |
@@ -150,7 +150,7 @@ npm run dev            # Vite + Express hot reload
 npm run build          # Vite frontend + esbuild server bundle
 
 # Deploy to Cloudflare
-npx wrangler deploy --env production
+npx cf deploy --env production
 
 # Health check post-deploy
 curl -s https://chittyassets-api-prod.workers.dev/health | jq .
@@ -159,9 +159,9 @@ curl -s https://chittyassets-api-prod.workers.dev/health | jq .
 npm run db:push
 ```
 
-Secrets are injected via 1Password:
+Secrets are injected via chittysecrets:
 ```bash
-op run --env-file=.env.chittyos -- npm run dev
+chittysecrets run --env-file=.env.chittyos -- npm run dev
 ```
 
 ---

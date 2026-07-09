@@ -3741,7 +3741,7 @@
     encryption: {
       transit: "TLS 1.3 everywhere",
       rest: "AES-256-GCM",
-      keys: "1Password + HSM"
+      keys: "chittysecrets + HSM"
     },
 
     compliance: {
@@ -3762,7 +3762,7 @@
     // IaC
     infrastructure: "Terraform + Pulumi",
     config: "Kubernetes + Helm",
-    secrets: "1Password + Vault",
+    secrets: "chittysecrets + Vault",
 
     // Monitoring
     apm: "Datadog APM",
