@@ -6,7 +6,7 @@ version: 1.0.0
 status: PENDING
 registered_with: null
 title: "ChittyAssets Charter"
-certifier: chittycanon://core/services/chittycertify
+certifier: chittycanon://core/foundation/mychitty-vault
 visibility: PUBLIC
 service_uri: chittycanon://core/services/chittyassets
 ---
